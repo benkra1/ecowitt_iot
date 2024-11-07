@@ -1,4 +1,5 @@
 """Constants for the Ecowitt IoT integration."""
+from datetime import timedelta
 from typing import Final
 
 DOMAIN: Final = "ecowitt_iot"
@@ -9,7 +10,7 @@ CONF_MODEL: Final = "model"
 
 # Defaults
 DEFAULT_NAME: Final = "Ecowitt IoT"
-DEFAULT_SCAN_INTERVAL: Final = 30
+DEFAULT_SCAN_INTERVAL: Final = 30  # seconds
 
 # Device Models
 MODEL_AC1100: Final = 2
