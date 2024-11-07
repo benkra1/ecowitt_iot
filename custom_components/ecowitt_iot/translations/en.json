@@ -1,0 +1,72 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Ecowitt IoT Device",
+        "description": "Set up your Ecowitt IoT device to monitor and control.",
+        "data": {
+          "host": "IP Address or Hostname"
+        }
+      },
+      "devices": {
+        "title": "Device Configuration",
+        "description": "Add the devices connected to your Ecowitt IoT hub.",
+        "data": {
+          "devices": "Devices"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+      "timeout_connect": "Timeout establishing connection",
+      "invalid_host": "Invalid hostname or IP address"
+    },
+    "abort": {
+      "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "leak": {
+        "name": "Leak"
+      },
+      "no_water": {
+        "name": "No Water"
+      },
+      "low_battery": {
+        "name": "Battery Low"
+      },
+      "offline": {
+        "name": "Device Offline"
+      }
+    },
+    "sensor": {
+      "power": {
+        "name": "Power"
+      },
+      "voltage": {
+        "name": "Voltage"
+      },
+      "current": {
+        "name": "Current"
+      },
+      "energy": {
+        "name": "Energy"
+      },
+      "flow_rate": {
+        "name": "Flow Rate"
+      },
+      "total_water": {
+        "name": "Total Water"
+      }
+    },
+    "switch": {
+      "power_switch": {
+        "name": "Power"
+      },
+      "valve_switch": {
+        "name": "Valve"
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Ecowitt IoT Device",
+        "description": "Set up your Ecowitt IoT device to monitor and control.",
+        "data": {
+          "host": "IP Address or Hostname"
+        }
+      },
+      "devices": {
+        "title": "Device Configuration",
+        "description": "Add the devices connected to your Ecowitt IoT hub.",
+        "data": {
+          "devices": "Devices"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "timeout_connect": "Connection timeout",
+      "invalid_host": "Invalid hostname or IP address"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
