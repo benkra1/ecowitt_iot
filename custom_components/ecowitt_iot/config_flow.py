@@ -13,16 +13,11 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
-class ConfigFlowError(Exception):
-    """Base class for config flow errors."""
-
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -53,10 +48,10 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> list[dict
                 devices = json.loads(text)
             except json.JSONDecodeError as err:
                 _LOGGER.error("Failed to parse JSON: %s. Raw text: %s", err, text)
-                raise ConfigFlowError("Invalid JSON response") from err
+                raise
             
             if not isinstance(devices, dict) or "command" not in devices:
-                raise ConfigFlowError("Invalid device list format")
+                raise ValueError("Invalid device list format")
             
             # Log discovered devices
             _LOGGER.info("Found devices: %s", devices["command"])
@@ -97,15 +92,20 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     errors["base"] = "no_devices"
                 else:
                     _LOGGER.info("Found devices: %s", self._devices)
-                    # Automatically create entry with discovered devices
-                    devices_config = [
-                        {
-                            "id": str(device["id"]),
-                            "model": device["model"]
+                    
+                    # Process discovered devices
+                    devices_config = []
+                    for device in self._devices:
+                        # Extract required fields with defaults
+                        device_entry = {
+                            "id": device["id"],  # Required
+                            "model": device["model"],  # Required
+                            "version": device.get("ver", "unknown"),  # Optional
+                            "nickname": device.get("nickname", f"Device {device['id']}")  # Optional
                         }
-                        for device in self._devices
-                        if "id" in device and "model" in device
-                    ]
+                        devices_config.append(device_entry)
+                    
+                    _LOGGER.debug("Created device config: %s", devices_config)
                     
                     return self.async_create_entry(
                         title=f"Ecowitt IoT ({self._host})",

@@ -26,15 +26,30 @@ PLATFORMS: list[Platform] = [
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Ecowitt IoT from a config entry."""
     try:
-        devices = [
-            EcowittDeviceDescription(
-                device_id=str(device["id"]),
-                model=device["model"],
-                name=device.get("nickname"),
-                sw_version=str(device.get("version")),
-            )
-            for device in entry.data.get("devices", [])
-        ]
+        # Log the entry data to debug
+        _LOGGER.debug("Setting up entry with data: %s", entry.data)
+        
+        devices_data = entry.data.get("devices", [])
+        if not devices_data:
+            _LOGGER.error("No devices found in config entry")
+            raise ConfigEntryNotReady("No devices configured")
+
+        devices = []
+        for device_data in devices_data:
+            try:
+                device = EcowittDeviceDescription(
+                    device_id=str(device_data["id"]),
+                    model=int(device_data["model"]),
+                    name=device_data.get("nickname"),
+                    sw_version=str(device_data.get("version", "unknown")),
+                )
+                devices.append(device)
+            except KeyError as err:
+                _LOGGER.error("Missing required field for device: %s", err)
+                continue  # Skip this device but continue with others
+
+        if not devices:
+            raise ConfigEntryNotReady("No valid devices configured")
 
         coordinator = EcowittDataUpdateCoordinator(
             hass=hass,
@@ -43,11 +58,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
         await coordinator.async_config_entry_first_refresh()
+
     except asyncio.TimeoutError as ex:
         raise ConfigEntryNotReady(
             f"Timeout connecting to device at {entry.data[CONF_HOST]}"
         ) from ex
     except Exception as ex:
+        _LOGGER.exception("Failed to setup integration")
         raise ConfigEntryNotReady(
             f"Failed to connect to device at {entry.data[CONF_HOST]}: {str(ex)}"
         ) from ex
