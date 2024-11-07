@@ -9,7 +9,7 @@ from typing import Any
 import aiohttp
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant import config_entries
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
@@ -70,7 +70,7 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> list[dict
         raise
 
 
-class EcowittConfigFlow(ConfigEntry.flow.FlowHandler):
+class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Ecowitt IoT."""
 
     VERSION = 1

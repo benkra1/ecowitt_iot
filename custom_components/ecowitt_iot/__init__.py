@@ -10,16 +10,16 @@ from homeassistant.const import CONF_HOST, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 
-from .const import CONF_DEVICE_ID, CONF_MODEL, DOMAIN
+from .const import DOMAIN
 from .coordinator import EcowittDataUpdateCoordinator
 from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
-    Platform.BINARY_SENSOR,
     Platform.SENSOR,
     Platform.SWITCH,
+    Platform.BINARY_SENSOR,
 ]
 
 
@@ -28,8 +28,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         devices = [
             EcowittDeviceDescription(
-                device_id=device[CONF_DEVICE_ID],
-                model=device[CONF_MODEL],
+                device_id=str(device["id"]),
+                model=device["model"],
+                name=device.get("nickname"),
+                sw_version=str(device.get("version")),
             )
             for device in entry.data.get("devices", [])
         ]
@@ -43,11 +45,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await coordinator.async_config_entry_first_refresh()
     except asyncio.TimeoutError as ex:
         raise ConfigEntryNotReady(
-            f"Timeout connecting to Ecowitt device at {entry.data[CONF_HOST]}"
+            f"Timeout connecting to device at {entry.data[CONF_HOST]}"
         ) from ex
     except Exception as ex:
         raise ConfigEntryNotReady(
-            f"Failed to connect to Ecowitt device at {entry.data[CONF_HOST]}: {str(ex)}"
+            f"Failed to connect to device at {entry.data[CONF_HOST]}: {str(ex)}"
         ) from ex
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -69,14 +71,4 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
-
-
-async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
-    """Migrate old entry."""
-    _LOGGER.debug("Migrating from version %s", config_entry.version)
-
-    if config_entry.version == 1:
-        # Migration not implemented yet
-        pass
-
-    return True
+    
