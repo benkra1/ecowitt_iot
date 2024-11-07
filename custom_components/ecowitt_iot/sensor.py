@@ -17,8 +17,8 @@ from homeassistant.const import (
     UnitOfElectricPotential,
     UnitOfEnergy,
     UnitOfPower,
-    VOLUME_LITERS,
-    VOLUME_FLOW_RATE_LITERS_PER_MINUTE,
+    UnitOfVolume,
+    UnitOfVolumeFlowRate,  # Use this instead of VOLUME_FLOW_RATE
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -28,7 +28,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import DOMAIN, MODEL_AC1100
 from .coordinator import EcowittDataUpdateCoordinator
 from .models import EcowittDeviceDescription
-
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,7 +78,7 @@ WFC01_SENSORS = [
     EcowittSensorEntityDescription(
         key="flow_rate",
         name="Flow Rate",
-        native_unit_of_measurement=VOLUME_FLOW_RATE_LITERS_PER_MINUTE,
+        native_unit_of_measurement=UnitOfVolumeFlowRate.LITERS_PER_MINUTE,
         device_class=SensorDeviceClass.WATER,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn="flow_velocity",
@@ -87,7 +86,7 @@ WFC01_SENSORS = [
     EcowittSensorEntityDescription(
         key="total_water",
         name="Total Water",
-        native_unit_of_measurement=VOLUME_LITERS,
+        native_unit_of_measurement=UnitOfVolume.LITERS,
         device_class=SensorDeviceClass.WATER,
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn="water_total",
