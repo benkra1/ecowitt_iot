@@ -5,6 +5,7 @@
     "config_flow": true,
     "dependencies": [],
     "documentation": "https://github.com/bwooce/ecowitt-iot",
+    "issue_tracker": "https://github.com/bwooce/ecowitt-iot/issues",
     "homekit": {},
     "iot_class": "local_polling",
     "requirements": [],
