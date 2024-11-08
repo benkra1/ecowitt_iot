@@ -136,7 +136,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "off_time": 0,
                     "val_type": 0,
                     "val": 0,
-                    "id": device_id,
+                    "id": int(device_id),  # Convert to integer
                     "model": device.model
                 }]
             }
@@ -144,7 +144,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             payload = {
                 "command": [{
                     "cmd": "quick_stop",
-                    "id": device_id,
+                    "id": int(device_id),  # Convert to integer
                     "model": device.model
                 }]
             }
@@ -160,6 +160,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if text != "200 OK":
                     raise UpdateFailed(f"Failed to set device state: {text}")
                 
+                await asyncio.sleep(1)
                 await self.async_request_refresh()
                 
         except Exception as err:
