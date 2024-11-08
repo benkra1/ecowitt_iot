@@ -22,6 +22,7 @@ from homeassistant.const import (
     UnitOfVolumeFlowRate,  # Use this instead of VOLUME_FLOW_RATE
     UnitOfTemperature,  
     EntityCategory,
+    CONF_TEMPERATURE_UNIT,
 )
 
 from homeassistant.core import HomeAssistant
