@@ -38,42 +38,7 @@ class EcowittSensorEntityDescription(SensorEntityDescription):
 
     value_fn: str | None = None
 
-
-AC1100_SENSORS = [
-    EcowittSensorEntityDescription(
-        key="power",
-        name="Power",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn="realtime_power",
-    ),
-    EcowittSensorEntityDescription(
-        key="voltage",
-        name="Voltage",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn="ac_voltage",
-    ),
-    EcowittSensorEntityDescription(
-        key="current",
-        name="Current",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        value_fn="ac_current",
-    ),
-    EcowittSensorEntityDescription(
-        key="energy",
-        name="Energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        value_fn="elect_total",
-    ),
-]
-
+# Main sensors enabled by default
 WFC01_SENSORS = [
     EcowittSensorEntityDescription(
         key="flow_rate",
@@ -82,6 +47,7 @@ WFC01_SENSORS = [
         device_class=SensorDeviceClass.WATER,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn="flow_velocity",
+        entity_registry_enabled_default=True,
     ),
     EcowittSensorEntityDescription(
         key="total_water",
@@ -90,9 +56,124 @@ WFC01_SENSORS = [
         device_class=SensorDeviceClass.WATER,
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn="water_total",
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="battery",
+        name="Battery",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn="battery",
+        value_map=battery_level_map,
+        entity_registry_enabled_default=True,
+    ),
+    # Signal sensors disabled by default
+    EcowittSensorEntityDescription(
+        key="signal_strength",
+        name="Signal Strength",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn="signal",
+        value_map=signal_strength_map,
+        entity_registry_enabled_default=False,
+    ),
+    EcowittSensorEntityDescription(
+        key="signal_strength_raw",
+        name="Signal Strength Raw",
+        native_unit_of_measurement=None,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn="signal",
+        icon="mdi:wifi",
+        entity_registry_enabled_default=False,
+    ),
+    EcowittSensorEntityDescription(
+        key="rssi",
+        name="RSSI",
+        native_unit_of_measurement="dBm",
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn="gw_rssi",
+        entity_registry_enabled_default=False,
     ),
 ]
 
+# Main sensors enabled by default for AC1100
+AC1100_SENSORS = [
+    EcowittSensorEntityDescription(
+        key="power",
+        name="Power",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="realtime_power",
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="voltage",
+        name="Voltage",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="ac_voltage",
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="current",
+        name="Current",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="ac_current",
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="energy",
+        name="Energy",
+        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
+        device_class=SensorDeviceClass.ENERGY,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn="elect_total",
+        entity_registry_enabled_default=True,
+    ),
+    # Signal sensors disabled by default
+    EcowittSensorEntityDescription(
+        key="signal_strength",
+        name="Signal Strength",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn="signal",
+        value_map=signal_strength_map,
+        entity_registry_enabled_default=False,
+    ),
+    EcowittSensorEntityDescription(
+        key="signal_strength_raw",
+        name="Signal Strength Raw",
+        native_unit_of_measurement=None,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn="signal",
+        icon="mdi:wifi",
+        entity_registry_enabled_default=False,
+    ),
+    EcowittSensorEntityDescription(
+        key="rssi",
+        name="RSSI",
+        native_unit_of_measurement="dBm",
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn="gw_rssi",
+        entity_registry_enabled_default=False,
+    ),
+]
 
 async def async_setup_entry(
     hass: HomeAssistant,
