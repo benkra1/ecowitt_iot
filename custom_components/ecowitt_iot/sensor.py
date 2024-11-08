@@ -39,11 +39,13 @@ def clean_numeric_value(value: Any) -> float:
         return float(value.strip(' "%'))
     return float(value)
 
-
 def battery_level_map(value: int) -> int:
     """Map battery value (0-5) to percentage."""
-    if 0 <= value <= 5:
-        return int((value / 5) * 100)
+    _LOGGER.debug("Mapping battery value: %s to percentage", value)
+    if isinstance(value, (int, float)) and 0 <= value <= 5:
+        percentage = int((value / 5) * 100)
+        _LOGGER.debug("Calculated battery percentage: %s", percentage)
+        return percentage
     return 0
 
 def signal_strength_map(value: int) -> int:
@@ -86,7 +88,7 @@ WFC01_SENSORS = [
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn="wfc01batt",  # Changed from "battery" to "wfc01batt"
+        value_fn="wfc01batt",  # Changed from battery to wfc01batt to match API
         value_map=battery_level_map,
         entity_registry_enabled_default=True,
     ),
@@ -243,20 +245,39 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
         """Return the state of the sensor."""
         try:
             device_data = self.coordinator.data[self._device.device_id]["command"][0]
-            raw_value = device_data.get(self.entity_description.value_fn, 0)
+            _LOGGER.debug(
+                "Getting sensor value for %s from key %s in data: %s",
+                self.entity_description.key,
+                self.entity_description.value_fn,
+                device_data
+            )
             
-            # Clean the value if it's a string
+            raw_value = device_data.get(self.entity_description.value_fn, 0)
+            _LOGGER.debug("Raw value for %s: %s", self.entity_description.key, raw_value)
+            
+            # Clean numeric values if they're strings
             if isinstance(raw_value, str):
-                raw_value = clean_numeric_value(raw_value)
-                
+                raw_value = float(raw_value.strip(' "%'))
+            
             # Apply value mapping if provided
             if self.entity_description.value_map is not None:
-                return self.entity_description.value_map(raw_value)
+                mapped_value = self.entity_description.value_map(raw_value)
+                _LOGGER.debug(
+                    "Mapped value for %s from %s to %s",
+                    self.entity_description.key,
+                    raw_value,
+                    mapped_value
+                )
+                return mapped_value
             
             return raw_value
             
         except (KeyError, IndexError, ValueError, TypeError) as err:
-            _LOGGER.error("Error getting value for %s: %s", self.entity_description.key, err)
+            _LOGGER.error(
+                "Error getting value for %s: %s",
+                self.entity_description.key,
+                err
+            )
             return None
 
     @property
