@@ -29,6 +29,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, MODEL_AC1100
 from .coordinator import EcowittDataUpdateCoordinator
@@ -286,8 +287,10 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
             # Special handling for timestamp
             if self.entity_description.device_class == SensorDeviceClass.TIMESTAMP:
                 try:
-                    return int(raw_value)
-                except (TypeError, ValueError):
+                    timestamp = int(raw_value)
+                    return dt_util.utc_from_timestamp(timestamp)
+                except (TypeError, ValueError) as err:
+                    _LOGGER.error("Error converting timestamp %s: %s", raw_value, err)
                     return None
             
             # Clean numeric values if they're strings
