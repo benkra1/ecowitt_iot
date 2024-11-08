@@ -28,6 +28,7 @@ class EcowittBinarySensorDescription(BinarySensorEntityDescription):
     """Describes an Ecowitt binary sensor."""
 
     bit_position: int = 0
+    inverted: bool = False  # Added to dataclass
 
 
 AC1100_BINARY_SENSORS = [
@@ -66,13 +67,13 @@ AC1100_BINARY_SENSORS = [
         entity_category=EntityCategory.DIAGNOSTIC,
         bit_position=4,
     ),
-        EcowittBinarySensorDescription(
+    EcowittBinarySensorDescription(
         key="offline",
-        name="Device Connected",  # Changed name to be more intuitive
+        name="Device Connected",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         bit_position=7,
-        inverted=True,  # Invert this sensor
+        inverted=True,
     ),
 ]
 
@@ -114,11 +115,11 @@ WFC01_BINARY_SENSORS = [
     ),
     EcowittBinarySensorDescription(
         key="offline",
-        name="Device Connected",  # Changed name to be more intuitive
+        name="Device Connected",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         bit_position=7,
-        inverted=True,  # Invert this sensor
+        inverted=True,
     ),
 ]
 
@@ -190,6 +191,7 @@ class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], Binar
             and self._device.device_id in self.coordinator.data
             and len(self.coordinator.data[self._device.device_id].get("command", [])) > 0
         )
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
