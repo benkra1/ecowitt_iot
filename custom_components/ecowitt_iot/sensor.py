@@ -88,7 +88,7 @@ WFC01_SENSORS = [
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn="wfc01batt",  # Changed from battery to wfc01batt to match API
+        value_fn="wfc01batt", 
         value_map=battery_level_map,
         entity_registry_enabled_default=True,
     ),

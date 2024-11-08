@@ -102,7 +102,7 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "id": device["id"],
                             "model": device["model"],
                             "version": formatted_version,
-                            "nickname": device.get("nickname", f"Device {device['id']}")
+                            "nickname": device.get("nickname", f"Device {hex(int(device['id']))[2:].upper()}")
                         }
                         devices_config.append(device_entry)
                     
