@@ -57,7 +57,6 @@ async def async_setup_entry(
         if device.model in SWITCH_DESCRIPTIONS
     )
 
-
 class EcowittSwitch(CoordinatorEntity[EcowittDataUpdateCoordinator], SwitchEntity):
     """Representation of an Ecowitt switch."""
 
@@ -79,23 +78,6 @@ class EcowittSwitch(CoordinatorEntity[EcowittDataUpdateCoordinator], SwitchEntit
         self._attr_name = description.name
 
     @property
-    def is_on(self) -> bool | None:
-        """Return True if entity is on."""
-        try:
-            device_data = self.coordinator.data[self._device.device_id]["command"][0]
-            return bool(device_data.get(self.entity_description.status_key, 0))
-        except (KeyError, IndexError):
-            return None
-
-    async def async_turn_on(self, **kwargs: Any) -> None:
-        """Turn the entity on."""
-        await self.coordinator.set_device_state(self._device.device_id, True)
-
-    async def async_turn_off(self, **kwargs: Any) -> None:
-        """Turn the entity off."""
-        await self.coordinator.set_device_state(self._device.device_id, False)
-
-    @property
     def available(self) -> bool:
         """Return True if entity is available."""
         return (
@@ -104,3 +86,34 @@ class EcowittSwitch(CoordinatorEntity[EcowittDataUpdateCoordinator], SwitchEntit
             and len(self.coordinator.data[self._device.device_id].get("command", [])) > 0
         )
         
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the entity on."""
+        try:
+            await self.coordinator.set_device_state(self._device.device_id, True)
+            # Force an immediate update after state change
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Error turning on device %s: %s", self._device.device_id, err)
+            raise
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the entity off."""
+        try:
+            await self.coordinator.set_device_state(self._device.device_id, False)
+            # Force an immediate update after state change
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Error turning off device %s: %s", self._device.device_id, err)
+            raise
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if the binary sensor is on."""
+        try:
+            device_data = self.coordinator.data[self._device.device_id]["command"][0]
+            if self._device.model == 1:  # WFC01
+                return bool(device_data.get("water_status", 0))
+            else:  # AC1100
+                return bool(device_data.get("ac_status", 0))
+        except (KeyError, IndexError):
+            return None

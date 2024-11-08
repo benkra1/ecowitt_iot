@@ -122,6 +122,8 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not device:
             raise ValueError(f"Device {device_id} not found")
 
+        _LOGGER.debug("Setting device %s state to %s", device_id, state)
+        
         url = f"http://{self.host}/parse_quick_cmd_iot"
         if state:
             payload = {
@@ -148,9 +150,14 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             }
 
         try:
+            _LOGGER.debug("Sending command to %s: %s", url, payload)
             async with self.session.post(url, json=payload) as response:
                 text = await response.text()
-                if text.strip(' %\n\r') != "200 OK":
+                _LOGGER.debug("Received response: %s", text)
+                
+                # Strip any trailing characters and whitespace
+                text = text.strip(' %\n\r')
+                if text != "200 OK":
                     raise UpdateFailed(f"Failed to set device state: {text}")
                 
                 await self.async_request_refresh()

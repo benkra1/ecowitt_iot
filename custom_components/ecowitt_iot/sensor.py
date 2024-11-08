@@ -33,17 +33,17 @@ from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
 
+def clean_numeric_value(value: Any) -> float:
+    """Clean numeric values that might be strings."""
+    if isinstance(value, str):
+        return float(value.strip(' "%'))
+    return float(value)
+
+
 def battery_level_map(value: int) -> int:
     """Map battery value (0-5) to percentage."""
     if 0 <= value <= 5:
         return int((value / 5) * 100)
-    return 0
-
-
-def signal_strength_map(value: int) -> int:
-    """Map signal strength value (0-4) to percentage."""
-    if 0 <= value <= 4:
-        return int((value / 4) * 100)
     return 0
 
 @dataclass
@@ -80,7 +80,7 @@ WFC01_SENSORS = [
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn="battery",
+        value_fn="wfc01batt",  # Changed from "battery" to "wfc01batt"
         value_map=battery_level_map,
         entity_registry_enabled_default=True,
     ),
@@ -237,8 +237,20 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
         """Return the state of the sensor."""
         try:
             device_data = self.coordinator.data[self._device.device_id]["command"][0]
-            return float(device_data.get(self.entity_description.value_fn, 0))
-        except (KeyError, IndexError, ValueError, TypeError):
+            raw_value = device_data.get(self.entity_description.value_fn, 0)
+            
+            # Clean the value if it's a string
+            if isinstance(raw_value, str):
+                raw_value = clean_numeric_value(raw_value)
+                
+            # Apply value mapping if provided
+            if self.entity_description.value_map is not None:
+                return self.entity_description.value_map(raw_value)
+            
+            return raw_value
+            
+        except (KeyError, IndexError, ValueError, TypeError) as err:
+            _LOGGER.error("Error getting value for %s: %s", self.entity_description.key, err)
             return None
 
     @property
