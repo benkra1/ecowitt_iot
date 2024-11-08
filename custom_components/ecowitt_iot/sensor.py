@@ -137,14 +137,6 @@ WFC01_SENSORS = [
         entity_registry_enabled_default=True,
         value_fn="water_temp",
     ),
-    EcowittSensorEntityDescription(
-        key="last_update",
-        name="Last Update",
-        device_class=SensorDeviceClass.TIMESTAMP,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=True,
-        value_fn="timeutc",
-    ),
 ]
 
 # Main sensors enabled by default for AC1100
@@ -268,6 +260,20 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
         # Override temperature unit if this is a temperature sensor
         if self.entity_description.device_class == SensorDeviceClass.TEMPERATURE:
             self._attr_native_unit_of_measurement = self._temp_unit
+    
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        try:
+            device_data = self.coordinator.data[self._device.device_id]["command"][0]
+            timestamp = device_data.get("timeutc", 0)
+            if timestamp:
+                return {
+                    "last_updated": dt_util.utc_from_timestamp(int(timestamp))
+                }
+        except (KeyError, ValueError, TypeError):
+            pass
+        return {}
 
     @property
     def native_value(self) -> StateType:
@@ -283,15 +289,6 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
             
             raw_value = device_data.get(self.entity_description.value_fn, 0)
             _LOGGER.debug("Raw value for %s: %s", self.entity_description.key, raw_value)
-            
-            # Special handling for timestamp
-            if self.entity_description.device_class == SensorDeviceClass.TIMESTAMP:
-                try:
-                    timestamp = int(raw_value)
-                    return dt_util.utc_from_timestamp(timestamp)
-                except (TypeError, ValueError) as err:
-                    _LOGGER.error("Error converting timestamp %s: %s", raw_value, err)
-                    return None
             
             # Clean numeric values if they're strings
             if isinstance(raw_value, str):

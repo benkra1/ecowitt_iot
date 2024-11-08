@@ -17,6 +17,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 from .models import EcowittDeviceDescription
@@ -203,3 +204,14 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except Exception as err:
             _LOGGER.error("Error setting device state: %s", err)
             raise UpdateFailed(f"Failed to set device state: {err}") from err
+    
+    def get_device_last_update(self, device_id: str) -> datetime | None:
+        """Get the last update time for a device."""
+        try:
+            device_data = self.data[device_id]["command"][0]
+            timestamp = device_data.get("timeutc", 0)
+            if timestamp:
+                return dt_util.utc_from_timestamp(int(timestamp))
+        except (KeyError, ValueError, TypeError):
+            pass
+        return None
