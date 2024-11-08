@@ -20,10 +20,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 
-from .const import (
-    DOMAIN,
-    DEFAULT_SCAN_INTERVAL,
-)
+from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,6 +91,20 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Clean the response
             text = text.strip(' %\n\r')
             
+            # Handle "200 OK" response
+            if text == "200 OK":
+                _LOGGER.debug("Received OK response for device %s", device.device_id)
+                # Return a minimal device data structure
+                return {
+                    "command": [{
+                        "model": device.model,
+                        "id": device.device_id,
+                        "warning": 0,  # Assume no warnings
+                        "water_status": 0,  # For WFC01
+                        "ac_status": 0,     # For AC1100
+                    }]
+                }
+                
             try:
                 return json.loads(text)
             except json.JSONDecodeError as err:
@@ -104,3 +115,46 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     text,
                 )
                 raise UpdateFailed("Invalid response format") from err
+
+    async def set_device_state(self, device_id: str, state: bool) -> None:
+        """Set device state."""
+        device = next((d for d in self.devices if d.device_id == device_id), None)
+        if not device:
+            raise ValueError(f"Device {device_id} not found")
+
+        url = f"http://{self._host}/parse_quick_cmd_iot"
+        if state:
+            payload = {
+                "command": [{
+                    "cmd": "quick_run",
+                    "on_type": 0,
+                    "off_type": 0,
+                    "always_on": 1,
+                    "on_time": 0,
+                    "off_time": 0,
+                    "val_type": 0,
+                    "val": 0,
+                    "id": device_id,
+                    "model": device.model
+                }]
+            }
+        else:
+            payload = {
+                "command": [{
+                    "cmd": "quick_stop",
+                    "id": device_id,
+                    "model": device.model
+                }]
+            }
+
+        try:
+            async with self._session.post(url, json=payload) as response:
+                text = await response.text()
+                if text.strip(' %\n\r') != "200 OK":
+                    raise UpdateFailed(f"Failed to set device state: {text}")
+                
+                await self.async_request_refresh()
+                
+        except Exception as err:
+            _LOGGER.error("Error setting device state: %s", err)
+            raise UpdateFailed(f"Failed to set device state: {err}") from err
