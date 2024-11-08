@@ -44,8 +44,8 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self.config_entry = entry
         self.devices = devices
-        self._host = entry.data[CONF_HOST]
-        self._session = async_get_clientsession(hass)
+        self.host = entry.data[CONF_HOST]  # Remove underscore
+        self.session = async_get_clientsession(hass)  # Remove underscore
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via API."""
@@ -77,7 +77,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _fetch_device_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
         """Fetch data for a specific device."""
-        url = f"http://{self._host}/parse_quick_cmd_iot"
+        url = f"http://{self.host}/parse_quick_cmd_iot"
         payload = {
             "command": [{
                 "cmd": "read_device",
@@ -86,7 +86,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             }]
         }
         
-        async with self._session.post(url, json=payload) as response:
+        async with self.session.post(url, json=payload) as response:
             text = await response.text()
             # Clean the response
             text = text.strip(' %\n\r')
@@ -122,7 +122,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if not device:
             raise ValueError(f"Device {device_id} not found")
 
-        url = f"http://{self._host}/parse_quick_cmd_iot"
+        url = f"http://{self.host}/parse_quick_cmd_iot"
         if state:
             payload = {
                 "command": [{
@@ -148,7 +148,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             }
 
         try:
-            async with self._session.post(url, json=payload) as response:
+            async with self.session.post(url, json=payload) as response:
                 text = await response.text()
                 if text.strip(' %\n\r') != "200 OK":
                     raise UpdateFailed(f"Failed to set device state: {text}")
