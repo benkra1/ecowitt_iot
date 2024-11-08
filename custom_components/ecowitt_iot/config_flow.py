@@ -64,7 +64,6 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> list[dict
         _LOGGER.error("Error connecting to %s: %s", data[CONF_HOST], err)
         raise
 
-
 class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Ecowitt IoT."""
 
@@ -86,7 +85,6 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._devices = await validate_input(self.hass, user_input)
                 self._host = user_input[CONF_HOST]
                 
-                # If no devices found, show error
                 if not self._devices:
                     _LOGGER.warning("No devices found")
                     errors["base"] = "no_devices"
@@ -96,12 +94,15 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     # Process discovered devices
                     devices_config = []
                     for device in self._devices:
-                        # Extract required fields with defaults
+                        # Format version as "1.0.5" from ver=105
+                        version = device.get("ver", 0)
+                        formatted_version = f"{version//100}.{version//10%10}.{version%10}"
+                        
                         device_entry = {
-                            "id": device["id"],  # Required
-                            "model": device["model"],  # Required
-                            "version": device.get("ver", "unknown"),  # Optional
-                            "nickname": device.get("nickname", f"Device {device['id']}")  # Optional
+                            "id": device["id"],
+                            "model": device["model"],
+                            "version": formatted_version,
+                            "nickname": device.get("nickname", f"Device {device['id']}")
                         }
                         devices_config.append(device_entry)
                     
@@ -126,3 +127,4 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
         )
+ 

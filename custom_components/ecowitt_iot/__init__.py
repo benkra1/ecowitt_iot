@@ -22,11 +22,9 @@ PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
 ]
 
-
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Ecowitt IoT from a config entry."""
     try:
-        # Log the entry data to debug
         _LOGGER.debug("Setting up entry with data: %s", entry.data)
         
         devices_data = entry.data.get("devices", [])
@@ -41,9 +39,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     device_id=str(device_data["id"]),
                     model=int(device_data["model"]),
                     name=device_data.get("nickname"),
-                    sw_version=str(device_data.get("version", "unknown")),
+                    sw_version=device_data.get("version"),  # This will now be properly formatted
                 )
                 devices.append(device)
+                _LOGGER.debug(
+                    "Added device: id=%s, model=%s, version=%s",
+                    device.device_id,
+                    device.model_name,
+                    device.sw_version
+                )
             except KeyError as err:
                 _LOGGER.error("Missing required field for device: %s", err)
                 continue
