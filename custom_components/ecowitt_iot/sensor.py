@@ -33,12 +33,25 @@ from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
 
+def battery_level_map(value: int) -> int:
+    """Map battery value (0-5) to percentage."""
+    if 0 <= value <= 5:
+        return int((value / 5) * 100)
+    return 0
+
+
+def signal_strength_map(value: int) -> int:
+    """Map signal strength value (0-4) to percentage."""
+    if 0 <= value <= 4:
+        return int((value / 4) * 100)
+    return 0
 
 @dataclass
 class EcowittSensorEntityDescription(SensorEntityDescription):
     """Describes Ecowitt sensor entity."""
 
     value_fn: str | None = None
+    value_map: Callable[[Any], Any] | None = None
 
 # Main sensors enabled by default
 WFC01_SENSORS = [
