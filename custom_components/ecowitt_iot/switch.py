@@ -125,7 +125,7 @@ class EcowittSwitch(CoordinatorEntity[EcowittDataUpdateCoordinator], SwitchEntit
                 )
                 
                 # Return true if either condition is met
-                return bool(water_status) or bool(always_on) or bool(is_running)
+                return bool(water_status) or bool(is_running)
             else:  # AC1100
                 return bool(device_data.get("ac_status", 0))
         except (KeyError, IndexError) as err:
