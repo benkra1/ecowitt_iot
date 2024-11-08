@@ -116,6 +116,8 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                                 "gw_rssi": 0,
                                 "flow_velocity": "0.00",
                                 "water_total": "0.00"
+                                "water_temp": "20.0",  # Default to room temperature
+                                "timeutc": int(time.time()),  # Current timestamp
                             }]
                         }
                     else:  # AC1100

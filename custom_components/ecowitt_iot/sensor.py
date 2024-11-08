@@ -20,8 +20,10 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfVolume,
     UnitOfVolumeFlowRate,  # Use this instead of VOLUME_FLOW_RATE
+    UnitOfTemperature,  
     EntityCategory,
 )
+
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
@@ -124,6 +126,23 @@ WFC01_SENSORS = [
         value_fn="gw_rssi",
         entity_registry_enabled_default=False,
     ),
+    EcowittSensorEntityDescription(
+        key="temperature",
+        name="Water Temperature",
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,  # We'll convert from the provided Fahrenheit
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=True,
+        value_fn="water_temp",
+    ),
+    EcowittSensorEntityDescription(
+        key="last_update",
+        name="Last Update",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=True,
+        value_fn="timeutc",
+    ),
 ]
 
 # Main sensors enabled by default for AC1100
@@ -205,6 +224,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Ecowitt sensor based on a config entry."""
     coordinator: EcowittDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    temp_unit = entry.data.get(CONF_TEMPERATURE_UNIT, UnitOfTemperature.CELSIUS)
     entities: list[EcowittSensor] = []
 
     for device in coordinator.devices:
@@ -215,6 +235,7 @@ async def async_setup_entry(
                     coordinator=coordinator,
                     device=device,
                     description=description,
+                    temp_unit=temp_unit,
                 )
             )
 
@@ -232,13 +253,19 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
         coordinator: EcowittDataUpdateCoordinator,
         device: EcowittDeviceDescription,
         description: EcowittSensorEntityDescription,
+        temp_unit: str,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
         self.entity_description = description
         self._device = device
+        self._temp_unit = temp_unit
         self._attr_unique_id = f"{DOMAIN}_{device.device_id}_{description.key}"
         self._attr_device_info = device.device_info
+        
+        # Override temperature unit if this is a temperature sensor
+        if self.entity_description.device_class == SensorDeviceClass.TEMPERATURE:
+            self._attr_native_unit_of_measurement = self._temp_unit
 
     @property
     def native_value(self) -> StateType:
@@ -255,9 +282,24 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
             raw_value = device_data.get(self.entity_description.value_fn, 0)
             _LOGGER.debug("Raw value for %s: %s", self.entity_description.key, raw_value)
             
+            # Special handling for timestamp
+            if self.entity_description.device_class == SensorDeviceClass.TIMESTAMP:
+                try:
+                    return int(raw_value)
+                except (TypeError, ValueError):
+                    return None
+            
             # Clean numeric values if they're strings
             if isinstance(raw_value, str):
-                raw_value = float(raw_value.strip(' "%'))
+                try:
+                    raw_value = float(raw_value.strip(' "%'))
+                except ValueError:
+                    _LOGGER.error(
+                        "Could not convert value %s to float for sensor %s",
+                        raw_value,
+                        self.entity_description.key
+                    )
+                    return None
             
             # Apply value mapping if provided
             if self.entity_description.value_map is not None:

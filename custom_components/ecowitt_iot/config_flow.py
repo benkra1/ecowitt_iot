@@ -6,14 +6,20 @@ import json
 import logging
 from typing import Any
 
-import aiohttp
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_HOST
+from homeassistant.const import (
+    CONF_HOST,
+    CONF_TEMPERATURE_UNIT,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+)
 
 from .const import DOMAIN
 
@@ -22,6 +28,15 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
+        vol.Required(CONF_TEMPERATURE_UNIT, default=UnitOfTemperature.CELSIUS): SelectSelector(
+            SelectSelectorConfig(
+                options=[
+                    UnitOfTemperature.CELSIUS,
+                    UnitOfTemperature.FAHRENHEIT,
+                ],
+                translation_key="temperature_unit",
+            ),
+        ),
     }
 )
 
@@ -73,6 +88,7 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._host: str | None = None
         self._devices: list[dict[str, Any]] | None = None
+        self._temperature_unit: str = UnitOfTemperature.CELSIUS
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -84,6 +100,7 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 self._devices = await validate_input(self.hass, user_input)
                 self._host = user_input[CONF_HOST]
+                self._temperature_unit = user_input[CONF_TEMPERATURE_UNIT]
                 
                 if not self._devices:
                     _LOGGER.warning("No devices found")
@@ -112,6 +129,7 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         title=f"Ecowitt IoT ({self._host})",
                         data={
                             CONF_HOST: self._host,
+                            CONF_TEMPERATURE_UNIT: self._temperature_unit,
                             "devices": devices_config
                         },
                     )
