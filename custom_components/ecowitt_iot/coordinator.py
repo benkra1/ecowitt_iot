@@ -75,46 +75,70 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
         return data
 
-    async def _fetch_device_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
+async def _fetch_device_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
         """Fetch data for a specific device."""
         url = f"http://{self.host}/parse_quick_cmd_iot"
         payload = {
             "command": [{
                 "cmd": "read_device",
-                "id": device.device_id,
+                "id": int(device.device_id),
                 "model": device.model
             }]
         }
         
-        async with self.session.post(url, json=payload) as response:
-            text = await response.text()
-            # Clean the response
-            text = text.strip(' %\n\r')
-            
-            # Handle "200 OK" response
-            if text == "200 OK":
-                _LOGGER.debug("Received OK response for device %s", device.device_id)
-                # Return a minimal device data structure
-                return {
-                    "command": [{
-                        "model": device.model,
-                        "id": device.device_id,
-                        "warning": 0,  # Assume no warnings
-                        "water_status": 0,  # For WFC01
-                        "ac_status": 0,     # For AC1100
-                    }]
-                }
+        try:
+            _LOGGER.debug("Sending payload to %s: %s", url, payload)
+            async with self.session.post(url, json=payload) as response:
+                text = await response.text()
+                # Clean the response
+                text = text.strip(' %\n\r')
                 
-            try:
-                return json.loads(text)
-            except json.JSONDecodeError as err:
-                _LOGGER.error(
-                    "Error parsing JSON for device %s: %s. Response: %s",
-                    device.device_id,
-                    err,
-                    text,
-                )
-                raise UpdateFailed("Invalid response format") from err
+                _LOGGER.debug("Received response text: %s", text)
+                
+                # Handle "200 OK" response
+                if text == "200 OK":
+                    _LOGGER.debug("Received OK response for device %s", device.device_id)
+                    # Return model-specific minimal data structure
+                    if device.model == 1:  # WFC01
+                        return {
+                            "command": [{
+                                "model": device.model,
+                                "id": device.device_id,
+                                "warning": 0,
+                                "water_status": 0,
+                                "wfc01batt": 0,
+                                "flow_velocity": "0.00",
+                                "water_total": "0.00"
+                            }]
+                        }
+                    else:  # AC1100
+                        return {
+                            "command": [{
+                                "model": device.model,
+                                "id": device.device_id,
+                                "warning": 0,
+                                "ac_status": 0,
+                            }]
+                        }
+                    
+                try:
+                    data = json.loads(text)
+                    _LOGGER.debug("Parsed device data: %s", data)
+                    return data
+                except json.JSONDecodeError as err:
+                    _LOGGER.error(
+                        "Error parsing JSON for device %s: %s. Response: %s",
+                        device.device_id,
+                        err,
+                        text,
+                    )
+                    raise UpdateFailed("Invalid response format") from err
+                
+        except Exception as err:
+            _LOGGER.error(
+                "Error fetching data for device %s: %s", device.device_id, err
+            )
+            raise
 
     async def set_device_state(self, device_id: str, state: bool) -> None:
         """Set device state."""
