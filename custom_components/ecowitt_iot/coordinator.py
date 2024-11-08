@@ -1,4 +1,3 @@
-"""DataUpdateCoordinator for Ecowitt IoT."""
 from __future__ import annotations
 
 import asyncio
@@ -7,7 +6,6 @@ import logging
 from datetime import timedelta
 from typing import Any
 
-import aiohttp
 from aiohttp import ClientError
 import async_timeout
 
@@ -44,8 +42,9 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self.config_entry = entry
         self.devices = devices
-        self.host = entry.data[CONF_HOST]  # Remove underscore
-        self.session = async_get_clientsession(hass)  # Remove underscore
+        self.host = entry.data[CONF_HOST]
+        self.session = async_get_clientsession(hass)
+        self._last_good_data: dict[str, Any] = {}
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via API."""
@@ -73,6 +72,9 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     device.device_id,
                     err,
                 )
+                # Use last known good data if available
+                if device.device_id in self._last_good_data:
+                    data[device.device_id] = self._last_good_data[device.device_id]
         return data
 
     async def _fetch_device_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
@@ -90,15 +92,18 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.debug("Sending payload to %s: %s", url, payload)
             async with self.session.post(url, json=payload) as response:
                 text = await response.text()
-                # Clean the response
                 text = text.strip(' %\n\r')
                 
                 _LOGGER.debug("Received response text: %s", text)
                 
-                # Handle "200 OK" response
                 if text == "200 OK":
                     _LOGGER.debug("Received OK response for device %s", device.device_id)
-                    # Return model-specific minimal data structure
+                    # Use last known good data if available
+                    if device.device_id in self._last_good_data:
+                        _LOGGER.debug("Using last known good data for device %s", device.device_id)
+                        return self._last_good_data[device.device_id]
+                        
+                    # Otherwise use minimal data structure
                     if device.model == 1:  # WFC01
                         return {
                             "command": [{
@@ -107,6 +112,8 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                                 "warning": 0,
                                 "water_status": 0,
                                 "wfc01batt": 0,
+                                "rssi": 0,
+                                "gw_rssi": 0,
                                 "flow_velocity": "0.00",
                                 "water_total": "0.00"
                             }]
@@ -118,12 +125,16 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                                 "id": device.device_id,
                                 "warning": 0,
                                 "ac_status": 0,
+                                "rssi": 0,
+                                "gw_rssi": 0,
                             }]
                         }
                     
                 try:
                     data = json.loads(text)
-                    _LOGGER.debug("Parsed device data: %s", data)
+                    # Store this as last known good data
+                    self._last_good_data[device.device_id] = data
+                    _LOGGER.debug("Stored good data for device %s: %s", device.device_id, data)
                     return data
                 except json.JSONDecodeError as err:
                     _LOGGER.error(
@@ -160,7 +171,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "off_time": 0,
                     "val_type": 0,
                     "val": 0,
-                    "id": int(device_id),  # Convert to integer
+                    "id": int(device_id),
                     "model": device.model
                 }]
             }
@@ -168,7 +179,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             payload = {
                 "command": [{
                     "cmd": "quick_stop",
-                    "id": int(device_id),  # Convert to integer
+                    "id": int(device_id),
                     "model": device.model
                 }]
             }
