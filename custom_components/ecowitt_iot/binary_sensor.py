@@ -66,12 +66,13 @@ AC1100_BINARY_SENSORS = [
         entity_category=EntityCategory.DIAGNOSTIC,
         bit_position=4,
     ),
-    EcowittBinarySensorDescription(
+        EcowittBinarySensorDescription(
         key="offline",
-        name="Device Offline",
+        name="Device Connected",  # Changed name to be more intuitive
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         bit_position=7,
+        inverted=True,  # Invert this sensor
     ),
 ]
 
@@ -113,10 +114,11 @@ WFC01_BINARY_SENSORS = [
     ),
     EcowittBinarySensorDescription(
         key="offline",
-        name="Device Offline",
+        name="Device Connected",  # Changed name to be more intuitive
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         bit_position=7,
+        inverted=True,  # Invert this sensor
     ),
 ]
 
@@ -149,21 +151,27 @@ class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], Binar
             _LOGGER.debug(
                 "Device %s warning byte: %s (raw). Checking bit %d for %s",
                 self._device.device_id,
-                bin(warning_byte),  # Show binary representation
+                bin(warning_byte),
                 self.entity_description.bit_position,
                 self.entity_description.key
             )
             
             # Calculate bit value
             bit_value = bool(warning_byte & (1 << self.entity_description.bit_position))
+            
+            # Invert if needed
+            result = not bit_value if self.entity_description.inverted else bit_value
+            
             _LOGGER.debug(
-                "Device %s sensor %s bit value: %s",
+                "Device %s sensor %s bit value: %s (inverted: %s, final: %s)",
                 self._device.device_id,
                 self.entity_description.key,
-                bit_value
+                bit_value,
+                self.entity_description.inverted,
+                result
             )
             
-            return bit_value
+            return result
             
         except (KeyError, IndexError) as err:
             _LOGGER.error(
@@ -182,7 +190,6 @@ class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], Binar
             and self._device.device_id in self.coordinator.data
             and len(self.coordinator.data[self._device.device_id].get("command", [])) > 0
         )
-
 
 async def async_setup_entry(
     hass: HomeAssistant,
