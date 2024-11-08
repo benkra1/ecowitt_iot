@@ -56,7 +56,7 @@ async def async_setup_entry(
         for device in coordinator.devices
         if device.model in SWITCH_DESCRIPTIONS
     )
-
+        
 class EcowittSwitch(CoordinatorEntity[EcowittDataUpdateCoordinator], SwitchEntity):
     """Representation of an Ecowitt switch."""
 
@@ -108,12 +108,27 @@ class EcowittSwitch(CoordinatorEntity[EcowittDataUpdateCoordinator], SwitchEntit
 
     @property
     def is_on(self) -> bool | None:
-        """Return true if the binary sensor is on."""
+        """Return true if the switch is on."""
         try:
             device_data = self.coordinator.data[self._device.device_id]["command"][0]
+            _LOGGER.debug("Switch status check - Device data: %s", device_data)
+            
             if self._device.model == 1:  # WFC01
-                return bool(device_data.get("water_status", 0))
+                # Check both water_status and always_on
+                water_status = device_data.get("water_status", 0)
+                always_on = device_data.get("always_on", 0)
+                is_running = device_data.get("water_running", 0)
+                
+                _LOGGER.debug(
+                    "WFC01 state check - water_status: %s, always_on: %s, water_running: %s",
+                    water_status, always_on, is_running
+                )
+                
+                # Return true if either condition is met
+                return bool(water_status) or bool(always_on) or bool(is_running)
             else:  # AC1100
                 return bool(device_data.get("ac_status", 0))
-        except (KeyError, IndexError):
+        except (KeyError, IndexError) as err:
+            _LOGGER.error("Error getting switch state: %s", err)
             return None
+        
