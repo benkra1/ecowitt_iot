@@ -20,7 +20,6 @@ from .const import DOMAIN, MODEL_AC1100
 from .coordinator import EcowittDataUpdateCoordinator
 from .models import EcowittDeviceDescription
 
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -121,30 +120,6 @@ WFC01_BINARY_SENSORS = [
     ),
 ]
 
-
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-) -> None:
-    """Set up Ecowitt binary sensors based on a config entry."""
-    coordinator: EcowittDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
-    entities: list[EcowittBinarySensor] = []
-
-    for device in coordinator.devices:
-        sensors = AC1100_BINARY_SENSORS if device.model == MODEL_AC1100 else WFC01_BINARY_SENSORS
-        for description in sensors:
-            entities.append(
-                EcowittBinarySensor(
-                    coordinator=coordinator,
-                    device=device,
-                    description=description,
-                )
-            )
-
-    async_add_entities(entities)
-
-
 class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], BinarySensorEntity):
     """Representation of an Ecowitt binary sensor."""
 
@@ -170,8 +145,33 @@ class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], Binar
         try:
             device_data = self.coordinator.data[self._device.device_id]["command"][0]
             warning_byte = device_data.get("warning", 0)
-            return bool(warning_byte & (1 << self.entity_description.bit_position))
-        except (KeyError, IndexError):
+            
+            _LOGGER.debug(
+                "Device %s warning byte: %s (raw). Checking bit %d for %s",
+                self._device.device_id,
+                bin(warning_byte),  # Show binary representation
+                self.entity_description.bit_position,
+                self.entity_description.key
+            )
+            
+            # Calculate bit value
+            bit_value = bool(warning_byte & (1 << self.entity_description.bit_position))
+            _LOGGER.debug(
+                "Device %s sensor %s bit value: %s",
+                self._device.device_id,
+                self.entity_description.key,
+                bit_value
+            )
+            
+            return bit_value
+            
+        except (KeyError, IndexError) as err:
+            _LOGGER.error(
+                "Error getting warning bit for device %s sensor %s: %s", 
+                self._device.device_id, 
+                self.entity_description.key,
+                err
+            )
             return None
 
     @property
@@ -182,3 +182,31 @@ class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], Binar
             and self._device.device_id in self.coordinator.data
             and len(self.coordinator.data[self._device.device_id].get("command", [])) > 0
         )
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Ecowitt binary sensors based on a config entry."""
+    coordinator: EcowittDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    entities: list[EcowittBinarySensor] = []
+
+    for device in coordinator.devices:
+        sensors = AC1100_BINARY_SENSORS if device.model == MODEL_AC1100 else WFC01_BINARY_SENSORS
+        for description in sensors:
+            entities.append(
+                EcowittBinarySensor(
+                    coordinator=coordinator,
+                    device=device,
+                    description=description,
+                )
+            )
+            _LOGGER.debug(
+                "Added binary sensor %s for device %s",
+                description.key,
+                device.device_id
+            )
+
+    async_add_entities(entities)
