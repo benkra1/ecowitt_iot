@@ -75,7 +75,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 )
         return data
 
-async def _fetch_device_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
+    async def _fetch_device_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
         """Fetch data for a specific device."""
         url = f"http://{self.host}/parse_quick_cmd_iot"
         payload = {
