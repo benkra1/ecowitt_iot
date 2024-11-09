@@ -19,14 +19,6 @@
       "already_configured": "Device is already configured"
     }
   },
-  "selector": {
-        "temperature_unit": {
-            "options": {
-                "°C": "Celsius (°C)",
-                "°F": "Fahrenheit (°F)"
-            }
-        }
-  },
   "entity": {
     "sensor": {
       "power": {

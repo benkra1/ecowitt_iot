@@ -36,7 +36,6 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
                     UnitOfTemperature.CELSIUS,
                     UnitOfTemperature.FAHRENHEIT,
                 ],
-                translation_key="temperature_unit",
             ),
         ),
     }

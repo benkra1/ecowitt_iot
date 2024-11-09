@@ -131,7 +131,7 @@ WFC01_SENSORS = [
     EcowittSensorEntityDescription(
         key="temperature",
         name="Water Temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS,  # We'll convert from the provided Fahrenheit
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS, 
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=True,
