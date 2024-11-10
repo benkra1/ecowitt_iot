@@ -1,3 +1,4 @@
+"""Coordinator for Ecowitt IoT integration."""
 from __future__ import annotations
 
 import asyncio
@@ -7,25 +8,22 @@ import time
 from datetime import timedelta
 from typing import Any
 
-from aiohttp import ClientError
 import async_timeout
-
+from aiohttp import ClientError, ClientTimeout
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
 from homeassistant.util import dt as dt_util
-from homeassistant.helpers.backoff import exponential_backoff
 
 from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
-
 
 class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching Ecowitt IoT data."""
@@ -46,13 +44,13 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.config_entry = entry
         self.devices = devices
         self.host = entry.data[CONF_HOST]
-        self.session = async_get_clientsession(hass)
+        self.session = aiohttp_client.async_get_clientsession(hass)
         self._last_good_data: dict[str, Any] = {}
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Update data via API."""
         try:
-            async with async_timeout.timeout(10):
+            async with async_timeout.timeout(30):
                 return await self._fetch_data()
         except asyncio.TimeoutError as err:
             raise UpdateFailed("Timeout communicating with API") from err
@@ -90,56 +88,39 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "model": device.model
             }]
         }
-        
+
         try:
             _LOGGER.debug("Sending payload to %s: %s", url, payload)
-            async with self.session.post(url, json=payload) as response:
+
+            timeout = ClientTimeout(total=10)
+            async with self.session.post(url, json=payload, timeout=timeout) as response:
                 text = await response.text()
                 text = text.strip(' %\n\r')
-                
+
                 _LOGGER.debug("Received response text: %s", text)
-                
+
                 if text == "200 OK":
                     _LOGGER.debug("Received OK response for device %s", device.device_id)
                     # Use last known good data if available
                     if device.device_id in self._last_good_data:
-                        _LOGGER.debug("Using last known good data for device %s", device.device_id)
+                        _LOGGER.debug(
+                            "Using last known good data for device %s",
+                            device.device_id
+                        )
                         return self._last_good_data[device.device_id]
-                        
+
                     # Otherwise use minimal data structure
-                    if device.model == 1:  # WFC01
-                        return {
-                            "command": [{
-                                "model": device.model,
-                                "id": device.device_id,
-                                "warning": 0,
-                                "water_status": 0,
-                                "wfc01batt": 0,
-                                "rssi": 0,
-                                "gw_rssi": 0,
-                                "flow_velocity": "0.00",
-                                "water_total": "0.00",
-                                "water_temp": "20.0",  # Default to room temperature
-                                "timeutc": int(time.time()),  # Current timestamp
-                            }]
-                        }
-                    else:  # AC1100
-                        return {
-                            "command": [{
-                                "model": device.model,
-                                "id": device.device_id,
-                                "warning": 0,
-                                "ac_status": 0,
-                                "rssi": 0,
-                                "gw_rssi": 0,
-                            }]
-                        }
-                    
+                    return self._get_default_data(device)
+
                 try:
                     data = json.loads(text)
                     # Store this as last known good data
                     self._last_good_data[device.device_id] = data
-                    _LOGGER.debug("Stored good data for device %s: %s", device.device_id, data)
+                    _LOGGER.debug(
+                        "Stored good data for device %s: %s",
+                        device.device_id,
+                        data
+                    )
                     return data
                 except json.JSONDecodeError as err:
                     _LOGGER.error(
@@ -149,12 +130,42 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         text,
                     )
                     raise UpdateFailed("Invalid response format") from err
-                
+
         except Exception as err:
             _LOGGER.error(
-                "Error fetching data for device %s: %s", device.device_id, err
+                "Error fetching data for device %s: %s",
+                device.device_id,
+                err
             )
             raise
+
+    def _get_default_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
+        """Get default data structure for device."""
+        base_data = {
+            "model": device.model,
+            "id": device.device_id,
+            "warning": 0,
+            "rssi": 0,
+            "gw_rssi": 0,
+            "timeutc": int(time.time()),
+        }
+
+        if device.model == 1:  # WFC01
+            base_data.update({
+                "water_status": 0,
+                "flow_velocity": "0.00",
+                "water_total": "0.00",
+                "water_temp": "20.0",
+            })
+        else:  # AC1100
+            base_data.update({
+                "ac_status": 0,
+                "realtime_power": 0,
+                "ac_voltage": 0,
+                "ac_current": 0,
+            })
+
+        return {"command": [base_data]}
 
     async def set_device_state(self, device_id: str, state: bool) -> None:
         """Set device state."""
@@ -163,7 +174,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise ValueError(f"Device {device_id} not found")
 
         _LOGGER.debug("Setting device %s state to %s", device_id, state)
-        
+
         url = f"http://{self.host}/parse_quick_cmd_iot"
         if state:
             payload = {
@@ -191,22 +202,23 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         try:
             _LOGGER.debug("Sending command to %s: %s", url, payload)
-            async with self.session.post(url, json=payload) as response:
+
+            timeout = ClientTimeout(total=10)
+            async with self.session.post(url, json=payload, timeout=timeout) as response:
                 text = await response.text()
-                _LOGGER.debug("Received response: %s", text)
-                
-                # Strip any trailing characters and whitespace
                 text = text.strip(' %\n\r')
+                _LOGGER.debug("Received response: %s", text)
+
                 if text != "200 OK":
                     raise UpdateFailed(f"Failed to set device state: {text}")
-                
+
                 await asyncio.sleep(1)
                 await self.async_request_refresh()
-                
+
         except Exception as err:
             _LOGGER.error("Error setting device state: %s", err)
             raise UpdateFailed(f"Failed to set device state: {err}") from err
-    
+
     def get_device_last_update(self, device_id: str) -> datetime | None:
         """Get the last update time for a device."""
         try:
@@ -217,12 +229,3 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except (KeyError, ValueError, TypeError):
             pass
         return None
-
-    async def _fetch_with_retry(self, url, **kwargs):
-        """Fetch with retry logic."""
-        for attempt in exponential_backoff(retries=3):
-            try:
-                async with attempt:
-                    return await self.session.post(url, **kwargs)
-            except asyncio.TimeoutError:
-                continue
