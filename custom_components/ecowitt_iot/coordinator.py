@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -18,6 +19,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 from homeassistant.util import dt as dt_util
+from homeassistant.helpers.backoff import exponential_backoff
 
 from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
 from .models import EcowittDeviceDescription
@@ -215,3 +217,12 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except (KeyError, ValueError, TypeError):
             pass
         return None
+
+    async def _fetch_with_retry(self, url, **kwargs):
+        """Fetch with retry logic."""
+        for attempt in exponential_backoff(retries=3):
+            try:
+                async with attempt:
+                    return await self.session.post(url, **kwargs)
+            except asyncio.TimeoutError:
+                continue
