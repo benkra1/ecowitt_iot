@@ -1,17 +1,15 @@
 """Support for Ecowitt IoT binary sensors."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass,
-    BinarySensorEntity,
-    BinarySensorEntityDescription,
-)
+    BinarySensorDeviceClass, BinarySensorEntity, BinarySensorEntityDescription)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
+from homeassistant.const import (STATE_UNAVAILABLE, STATE_UNKNOWN,
+                                 EntityCategory)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -123,7 +121,10 @@ WFC01_BINARY_SENSORS = [
     ),
 ]
 
-class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], BinarySensorEntity):
+
+class EcowittBinarySensor(
+    CoordinatorEntity[EcowittDataUpdateCoordinator], BinarySensorEntity
+):
     """Representation of an Ecowitt binary sensor."""
 
     entity_description: EcowittBinarySensorDescription
@@ -148,38 +149,38 @@ class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], Binar
         try:
             device_data = self.coordinator.data[self._device.device_id]["command"][0]
             warning_byte = device_data.get("warning", 0)
-            
+
             _LOGGER.debug(
                 "Device %s warning byte: %s (raw). Checking bit %d for %s",
                 self._device.device_id,
                 bin(warning_byte),
                 self.entity_description.bit_position,
-                self.entity_description.key
+                self.entity_description.key,
             )
-            
+
             # Calculate bit value
             bit_value = bool(warning_byte & (1 << self.entity_description.bit_position))
-            
+
             # Invert if needed
             result = not bit_value if self.entity_description.inverted else bit_value
-            
+
             _LOGGER.debug(
                 "Device %s sensor %s bit value: %s (inverted: %s, final: %s)",
                 self._device.device_id,
                 self.entity_description.key,
                 bit_value,
                 self.entity_description.inverted,
-                result
+                result,
             )
-            
+
             return result
-            
+
         except (KeyError, IndexError) as err:
             _LOGGER.error(
-                "Error getting warning bit for device %s sensor %s: %s", 
-                self._device.device_id, 
+                "Error getting warning bit for device %s sensor %s: %s",
+                self._device.device_id,
                 self.entity_description.key,
-                err
+                err,
             )
             return None
 
@@ -189,7 +190,8 @@ class EcowittBinarySensor(CoordinatorEntity[EcowittDataUpdateCoordinator], Binar
         return (
             super().available
             and self._device.device_id in self.coordinator.data
-            and len(self.coordinator.data[self._device.device_id].get("command", [])) > 0
+            and len(self.coordinator.data[self._device.device_id].get("command", []))
+            > 0
         )
 
 
@@ -203,7 +205,11 @@ async def async_setup_entry(
     entities: list[EcowittBinarySensor] = []
 
     for device in coordinator.devices:
-        sensors = AC1100_BINARY_SENSORS if device.model == MODEL_AC1100 else WFC01_BINARY_SENSORS
+        sensors = (
+            AC1100_BINARY_SENSORS
+            if device.model == MODEL_AC1100
+            else WFC01_BINARY_SENSORS
+        )
         for description in sensors:
             entities.append(
                 EcowittBinarySensor(
@@ -215,14 +221,15 @@ async def async_setup_entry(
             _LOGGER.debug(
                 "Added binary sensor %s for device %s",
                 description.key,
-                device.device_id
+                device.device_id,
             )
 
     async_add_entities(entities)
-    
-async def async_added_to_hass(self) -> None:
-    """Handle entity which will be added."""
-    await super().async_added_to_hass()
-    if (state := await self.async_get_last_state()) is not None:
-        if state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
-            self._attr_native_value = state.state
+
+
+# async def async_added_to_hass(self) -> None:
+#    """Handle entity which will be added."""
+#    await super().async_added_to_hass()
+#    if (state := await self.async_get_last_state()) is not None:
+#        if state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+#            self._attr_native_value = state.state

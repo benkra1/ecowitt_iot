@@ -1,30 +1,18 @@
 """Support for Ecowitt IoT sensors."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, Callable
 
-from homeassistant.components.sensor import (
-    SensorDeviceClass,
-    SensorEntity,
-    SensorEntityDescription,
-    SensorStateClass,
-)
+from homeassistant.components.sensor import (SensorDeviceClass, SensorEntity,
+                                             SensorEntityDescription,
+                                             SensorStateClass)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfEnergy,
-    UnitOfPower,
-    UnitOfVolume,
-    UnitOfVolumeFlowRate,  # Use this instead of VOLUME_FLOW_RATE
-    UnitOfTemperature,  
-    EntityCategory,
-    CONF_TEMPERATURE_UNIT,
-)
-
+from homeassistant.const import (  # Use this instead of VOLUME_FLOW_RATE
+    CONF_TEMPERATURE_UNIT, PERCENTAGE, EntityCategory, UnitOfElectricCurrent,
+    UnitOfElectricPotential, UnitOfEnergy, UnitOfPower, UnitOfTemperature,
+    UnitOfVolume, UnitOfVolumeFlowRate)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import StateType
@@ -37,11 +25,13 @@ from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
 
+
 def clean_numeric_value(value: Any) -> float:
     """Clean numeric values that might be strings."""
     if isinstance(value, str):
         return float(value.strip(' "%'))
     return float(value)
+
 
 def battery_level_map(value: int) -> int:
     """Map battery value (0-5) to percentage."""
@@ -52,11 +42,13 @@ def battery_level_map(value: int) -> int:
         return percentage
     return 0
 
+
 def signal_strength_map(value: int) -> int:
     """Map signal strength value (0-4) to percentage."""
     if 0 <= value <= 4:
         return int((value / 4) * 100)
     return 0
+
 
 @dataclass
 class EcowittSensorEntityDescription(SensorEntityDescription):
@@ -64,6 +56,7 @@ class EcowittSensorEntityDescription(SensorEntityDescription):
 
     value_fn: str | None = None
     value_map: Callable[[Any], Any] | None = None
+
 
 # Main sensors enabled by default
 WFC01_SENSORS = [
@@ -92,7 +85,7 @@ WFC01_SENSORS = [
         device_class=SensorDeviceClass.BATTERY,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        value_fn="wfc01batt", 
+        value_fn="wfc01batt",
         value_map=battery_level_map,
         entity_registry_enabled_default=True,
     ),
@@ -131,7 +124,7 @@ WFC01_SENSORS = [
     EcowittSensorEntityDescription(
         key="temperature",
         name="Water Temperature",
-        native_unit_of_measurement=UnitOfTemperature.CELSIUS, 
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         entity_registry_enabled_default=True,
@@ -211,6 +204,9 @@ AC1100_SENSORS = [
     ),
 ]
 
+"""Print debug during entity creation."""
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -221,9 +217,15 @@ async def async_setup_entry(
     temp_unit = entry.data.get(CONF_TEMPERATURE_UNIT, UnitOfTemperature.CELSIUS)
     entities: list[EcowittSensor] = []
 
+    _LOGGER.debug("Setting up sensors for coordinator: %s", coordinator)
+    _LOGGER.debug("Coordinator devices: %s", coordinator.devices)
+    _LOGGER.debug("Coordinator data: %s", coordinator.data)
+
     for device in coordinator.devices:
+        _LOGGER.debug("Setting up sensors for device: %s", device)
         sensors = AC1100_SENSORS if device.model == MODEL_AC1100 else WFC01_SENSORS
         for description in sensors:
+            _LOGGER.debug("Creating sensor with description: %s", description)
             entities.append(
                 EcowittSensor(
                     coordinator=coordinator,
@@ -233,6 +235,7 @@ async def async_setup_entry(
                 )
             )
 
+    _LOGGER.debug("Created %d entities", len(entities))
     async_add_entities(entities)
 
 
@@ -256,11 +259,11 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
         self._temp_unit = temp_unit
         self._attr_unique_id = f"{DOMAIN}_{device.device_id}_{description.key}"
         self._attr_device_info = device.device_info
-        
+
         # Override temperature unit if this is a temperature sensor
         if self.entity_description.device_class == SensorDeviceClass.TEMPERATURE:
             self._attr_native_unit_of_measurement = self._temp_unit
-    
+
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional state attributes."""
@@ -268,9 +271,7 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
             device_data = self.coordinator.data[self._device.device_id]["command"][0]
             timestamp = device_data.get("timeutc", 0)
             if timestamp:
-                return {
-                    "last_updated": dt_util.utc_from_timestamp(int(timestamp))
-                }
+                return {"last_updated": dt_util.utc_from_timestamp(int(timestamp))}
         except (KeyError, ValueError, TypeError):
             pass
         return {}
@@ -284,12 +285,14 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
                 "Getting sensor value for %s from key %s in data: %s",
                 self.entity_description.key,
                 self.entity_description.value_fn,
-                device_data
+                device_data,
             )
-            
+
             raw_value = device_data.get(self.entity_description.value_fn, 0)
-            _LOGGER.debug("Raw value for %s: %s", self.entity_description.key, raw_value)
-            
+            _LOGGER.debug(
+                "Raw value for %s: %s", self.entity_description.key, raw_value
+            )
+
             # Clean numeric values if they're strings
             if isinstance(raw_value, str):
                 try:
@@ -298,10 +301,10 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
                     _LOGGER.error(
                         "Could not convert value %s to float for sensor %s",
                         raw_value,
-                        self.entity_description.key
+                        self.entity_description.key,
                     )
                     return None
-            
+
             # Apply value mapping if provided
             if self.entity_description.value_map is not None:
                 mapped_value = self.entity_description.value_map(raw_value)
@@ -309,17 +312,15 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
                     "Mapped value for %s from %s to %s",
                     self.entity_description.key,
                     raw_value,
-                    mapped_value
+                    mapped_value,
                 )
                 return mapped_value
-            
+
             return raw_value
-            
+
         except (KeyError, IndexError, ValueError, TypeError) as err:
             _LOGGER.error(
-                "Error getting value for %s: %s",
-                self.entity_description.key,
-                err
+                "Error getting value for %s: %s", self.entity_description.key, err
             )
             return None
 
@@ -329,5 +330,6 @@ class EcowittSensor(CoordinatorEntity[EcowittDataUpdateCoordinator], SensorEntit
         return (
             super().available
             and self._device.device_id in self.coordinator.data
-            and len(self.coordinator.data[self._device.device_id].get("command", [])) > 0
+            and len(self.coordinator.data[self._device.device_id].get("command", []))
+            > 0
         )

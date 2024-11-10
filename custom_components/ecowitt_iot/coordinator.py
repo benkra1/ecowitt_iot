@@ -5,7 +5,7 @@ import asyncio
 import json
 import logging
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import async_timeout
@@ -14,16 +14,15 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import aiohttp_client
-from homeassistant.helpers.update_coordinator import (
-    DataUpdateCoordinator,
-    UpdateFailed,
-)
+from homeassistant.helpers.update_coordinator import (DataUpdateCoordinator,
+                                                      UpdateFailed)
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, DEFAULT_SCAN_INTERVAL
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
 from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Class to manage fetching Ecowitt IoT data."""
@@ -78,34 +77,41 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     data[device.device_id] = self._last_good_data[device.device_id]
         return data
 
-    async def _fetch_device_data(self, device: EcowittDeviceDescription) -> dict[str, Any]:
+    async def _fetch_device_data(
+        self, device: EcowittDeviceDescription
+    ) -> dict[str, Any]:
         """Fetch data for a specific device."""
         url = f"http://{self.host}/parse_quick_cmd_iot"
         payload = {
-            "command": [{
-                "cmd": "read_device",
-                "id": int(device.device_id),
-                "model": device.model
-            }]
+            "command": [
+                {
+                    "cmd": "read_device",
+                    "id": int(device.device_id),
+                    "model": device.model,
+                }
+            ]
         }
 
         try:
             _LOGGER.debug("Sending payload to %s: %s", url, payload)
 
             timeout = ClientTimeout(total=10)
-            async with self.session.post(url, json=payload, timeout=timeout) as response:
+            async with self.session.post(
+                url, json=payload, timeout=timeout
+            ) as response:
                 text = await response.text()
-                text = text.strip(' %\n\r')
+                text = text.strip(" %\n\r")
 
                 _LOGGER.debug("Received response text: %s", text)
 
                 if text == "200 OK":
-                    _LOGGER.debug("Received OK response for device %s", device.device_id)
+                    _LOGGER.debug(
+                        "Received OK response for device %s", device.device_id
+                    )
                     # Use last known good data if available
                     if device.device_id in self._last_good_data:
                         _LOGGER.debug(
-                            "Using last known good data for device %s",
-                            device.device_id
+                            "Using last known good data for device %s", device.device_id
                         )
                         return self._last_good_data[device.device_id]
 
@@ -117,9 +123,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     # Store this as last known good data
                     self._last_good_data[device.device_id] = data
                     _LOGGER.debug(
-                        "Stored good data for device %s: %s",
-                        device.device_id,
-                        data
+                        "Stored good data for device %s: %s", device.device_id, data
                     )
                     return data
                 except json.JSONDecodeError as err:
@@ -133,9 +137,7 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         except Exception as err:
             _LOGGER.error(
-                "Error fetching data for device %s: %s",
-                device.device_id,
-                err
+                "Error fetching data for device %s: %s", device.device_id, err
             )
             raise
 
@@ -151,19 +153,23 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
 
         if device.model == 1:  # WFC01
-            base_data.update({
-                "water_status": 0,
-                "flow_velocity": "0.00",
-                "water_total": "0.00",
-                "water_temp": "20.0",
-            })
+            base_data.update(
+                {
+                    "water_status": 0,
+                    "flow_velocity": "0.00",
+                    "water_total": "0.00",
+                    "water_temp": "20.0",
+                }
+            )
         else:  # AC1100
-            base_data.update({
-                "ac_status": 0,
-                "realtime_power": 0,
-                "ac_voltage": 0,
-                "ac_current": 0,
-            })
+            base_data.update(
+                {
+                    "ac_status": 0,
+                    "realtime_power": 0,
+                    "ac_voltage": 0,
+                    "ac_current": 0,
+                }
+            )
 
         return {"command": [base_data]}
 
@@ -178,35 +184,37 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         url = f"http://{self.host}/parse_quick_cmd_iot"
         if state:
             payload = {
-                "command": [{
-                    "cmd": "quick_run",
-                    "on_type": 0,
-                    "off_type": 0,
-                    "always_on": 1,
-                    "on_time": 0,
-                    "off_time": 0,
-                    "val_type": 0,
-                    "val": 0,
-                    "id": int(device_id),
-                    "model": device.model
-                }]
+                "command": [
+                    {
+                        "cmd": "quick_run",
+                        "on_type": 0,
+                        "off_type": 0,
+                        "always_on": 1,
+                        "on_time": 0,
+                        "off_time": 0,
+                        "val_type": 0,
+                        "val": 0,
+                        "id": int(device_id),
+                        "model": device.model,
+                    }
+                ]
             }
         else:
             payload = {
-                "command": [{
-                    "cmd": "quick_stop",
-                    "id": int(device_id),
-                    "model": device.model
-                }]
+                "command": [
+                    {"cmd": "quick_stop", "id": int(device_id), "model": device.model}
+                ]
             }
 
         try:
             _LOGGER.debug("Sending command to %s: %s", url, payload)
 
             timeout = ClientTimeout(total=10)
-            async with self.session.post(url, json=payload, timeout=timeout) as response:
+            async with self.session.post(
+                url, json=payload, timeout=timeout
+            ) as response:
                 text = await response.text()
-                text = text.strip(' %\n\r')
+                text = text.strip(" %\n\r")
                 _LOGGER.debug("Received response: %s", text)
 
                 if text != "200 OK":

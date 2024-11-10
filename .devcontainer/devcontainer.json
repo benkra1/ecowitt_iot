@@ -1,7 +1,7 @@
 {
     "name": "Home Assistant Custom Component Development",
     "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
-    "postCreateCommand": "scripts/setup",
+    "postCreateCommand": "bash scripts/setup.sh || (sleep 30 && exit 1)",
     "customizations": {
         "vscode": {
             "extensions": [
@@ -24,8 +24,6 @@
         }
     },
     "features": {
-        "ghcr.io/devcontainers/features/github-cli:1": {},
-        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
         "ghcr.io/devcontainers/features/git:1": {
             "version": "latest",
             "ppa": false
@@ -34,9 +32,5 @@
     "containerEnv": {
         "DEVCONTAINER": "1"
     },
-    "initializeCommand": {
-        "git-init": "[ ! -d .git ] && git init || true"
-    },
-    "remoteUser": "vscode",
-    "updateContentCommand": "git init && pre-commit install"
+    "remoteUser": "vscode"
 }
