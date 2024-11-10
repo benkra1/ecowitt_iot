@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Stop on errors
+set -e
+
+# Install requirements
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements_test.txt
+
+# Install pre-commit hooks
+pre-commit install
+
+echo "Development environment setup complete!"
+
