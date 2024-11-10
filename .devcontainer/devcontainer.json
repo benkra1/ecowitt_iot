@@ -1,35 +1,42 @@
 {
-	"name": "Home Assistant Custom Component Development",
-	"image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
-	"postCreateCommand": "scripts/setup",
-	"customizations": {
-		"vscode": {
-			"extensions": [
-				"ms-python.python",
-				"github.vscode-pull-request-github",
-				"ryanluker.vscode-coverage-gutters",
-				"ms-python.vscode-pylance"
-			],
-			"settings": {
-				"python.defaultInterpreterPath": "/usr/local/bin/python",
-				"python.linting.enabled": true,
-				"python.linting.pylintEnabled": true,
-				"python.formatting.blackPath": "/usr/local/bin/black",
-				"python.linting.pylintPath": "/usr/local/bin/pylint",
-				"editor.formatOnPaste": false,
-				"editor.formatOnSave": true,
-				"editor.formatOnType": true,
-				"files.trimTrailingWhitespace": true
-			}
-		}
-	},
-	"features": {
-		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
-	},
-	"containerEnv": {
-		"DEVCONTAINER": "1"
-	},
-	"remoteUser": "vscode"
+    "name": "Home Assistant Custom Component Development",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.11",
+    "postCreateCommand": "scripts/setup",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "github.vscode-pull-request-github",
+                "ryanluker.vscode-coverage-gutters",
+                "ms-python.vscode-pylance"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.linting.enabled": true,
+                "python.linting.pylintEnabled": true,
+                "python.formatting.blackPath": "/usr/local/bin/black",
+                "python.linting.pylintPath": "/usr/local/bin/pylint",
+                "editor.formatOnPaste": false,
+                "editor.formatOnSave": true,
+                "editor.formatOnType": true,
+                "files.trimTrailingWhitespace": true
+            }
+        }
+    },
+    "features": {
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers/features/git:1": {
+            "version": "latest",
+            "ppa": false
+        }
+    },
+    "containerEnv": {
+        "DEVCONTAINER": "1"
+    },
+    "initializeCommand": {
+        "git-init": "[ ! -d .git ] && git init || true"
+    },
+    "remoteUser": "vscode",
+    "updateContentCommand": "git init && pre-commit install"
 }
-

@@ -7,8 +7,14 @@ set -e
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements_test.txt
 
+# Initialize git if not already initialized
+if [ ! -d .git ]; then
+    git init
+    git config --global user.email "dev@example.com"
+    git config --global user.name "Developer"
+fi
+
 # Install pre-commit hooks
 pre-commit install
 
 echo "Development environment setup complete!"
-
