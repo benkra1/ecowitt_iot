@@ -163,3 +163,28 @@ cython_debug/
 /.vscode/**
 .DS_Store
 **/.DS_Store
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Testing
+.coverage
+coverage.xml
+.pytest_cache/
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
