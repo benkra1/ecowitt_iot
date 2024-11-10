@@ -219,3 +219,10 @@ async def async_setup_entry(
             )
 
     async_add_entities(entities)
+    
+async def async_added_to_hass(self) -> None:
+    """Handle entity which will be added."""
+    await super().async_added_to_hass()
+    if (state := await self.async_get_last_state()) is not None:
+        if state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            self._attr_native_value = state.state
