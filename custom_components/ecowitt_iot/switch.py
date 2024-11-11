@@ -76,6 +76,7 @@ class EcowittSwitch(CoordinatorEntity[EcowittDataUpdateCoordinator], SwitchEntit
         self.entity_description = description
         self._device = device
         self._attr_unique_id = f"{DOMAIN}_{device.device_id}_{description.key}"
+        self._attr_entity_id = f"{DOMAIN}.{description.name.lower().replace(' ', '_')}_{description.key}"
         self._attr_device_info = device.device_info
         self._attr_name = description.name
 
