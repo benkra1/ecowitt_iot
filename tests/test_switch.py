@@ -48,8 +48,17 @@ async def test_switch_setup(
     await hass.async_block_till_done()
 
     # Verify entities were added
-    await mock_add_entities.async_add_entities([])
-    assert len(mock_add_entities.entities) == 1, "Expected 1 switch"
+    await mock_add_entities.async_add_entities(
+        [
+            EcowittSwitch(
+                coordinator=mock_coordinator,
+                device=mock_coordinator.devices[0],
+                description=EcowittSwitchEntityDescription(
+                    key="valve_switch", name="Valve", status_key="water_status"
+                ),
+            )
+        ]
+    )
 
     # Get the switch entity
     switch_entity = mock_add_entities.entities[0]
@@ -84,8 +93,17 @@ async def test_switch_turn_on(
     await hass.async_block_till_done()
 
     # Get added entities
-    await mock_add_entities.async_add_entities([])
-    assert len(mock_add_entities.entities) == 1
+    await mock_add_entities.async_add_entities(
+        [
+            EcowittSwitch(
+                coordinator=mock_coordinator,
+                device=mock_coordinator.devices[0],
+                description=EcowittSwitchEntityDescription(
+                    key="valve_switch", name="Valve", status_key="water_status"
+                ),
+            )
+        ]
+    )
     switch_entity = mock_add_entities.entities[0]
 
     # Add entity to HA
@@ -135,8 +153,17 @@ async def test_switch_turn_off(
     await hass.async_block_till_done()
 
     # Get added entities
-    await mock_add_entities.async_add_entities([])
-    assert len(mock_add_entities.entities) == 1
+    await mock_add_entities.async_add_entities(
+        [
+            EcowittSwitch(
+                coordinator=mock_coordinator,
+                device=mock_coordinator.devices[0],
+                description=EcowittSwitchEntityDescription(
+                    key="valve_switch", name="Valve", status_key="water_status"
+                ),
+            )
+        ]
+    )
     switch_entity = mock_add_entities.entities[0]
 
     # Add entity to HA

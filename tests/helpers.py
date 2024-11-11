@@ -8,6 +8,7 @@ from homeassistant.helpers.entity_platform import async_get_current_platform
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class MockEntityAdder:
     """Helper class to track added entities in tests."""
 
@@ -16,7 +17,7 @@ class MockEntityAdder:
         self.hass = hass
         self.entities: list[Entity] = []
 
-    async def async_add_entities(self, entities: list[Entity], update_before_add=True):
+    async def async_add_entities(self, entities: list[Entity]):
         """Track added entities and add them to Home Assistant."""
         self.entities.extend(entities)
 
@@ -24,10 +25,6 @@ class MockEntityAdder:
         for entity in entities:
             # Set Home Assistant instance
             entity.hass = self.hass
-
-            # Initialize the entity
-            if update_before_add:
-                await entity.async_update()
 
             try:
                 # Add to HA state machine
@@ -37,16 +34,11 @@ class MockEntityAdder:
                 await entity.async_update_ha_state(force_refresh=True)
 
                 _LOGGER.debug(
-                    "Added entity %s with state %s",
-                    entity.entity_id,
-                    entity.state
+                    "Added entity %s with state %s", entity.entity_id, entity.state
                 )
 
             except Exception as err:
                 _LOGGER.error(
-                    "Error adding entity %s: %s",
-                    entity.entity_id,
-                    err,
-                    exc_info=True
+                    "Error adding entity %s: %s", entity.entity_id, err, exc_info=True
                 )
                 raise
