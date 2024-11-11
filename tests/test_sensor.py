@@ -1,4 +1,5 @@
 """Test Ecowitt IoT sensor platform."""
+
 from unittest.mock import Mock
 
 import pytest

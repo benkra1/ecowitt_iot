@@ -1,4 +1,5 @@
 """Test Ecowitt IoT sensor platform."""
+
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -6,8 +7,7 @@ from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
 from custom_components.ecowitt_iot.const import DOMAIN
-from custom_components.ecowitt_iot.coordinator import \
-    EcowittDataUpdateCoordinator
+from custom_components.ecowitt_iot.coordinator import EcowittDataUpdateCoordinator
 from custom_components.ecowitt_iot.models import EcowittDeviceDescription
 
 pytestmark = pytest.mark.asyncio

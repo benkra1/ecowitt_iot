@@ -1,4 +1,5 @@
 """Test fixtures for Ecowitt IoT."""
+
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -6,8 +7,7 @@ from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 
 from custom_components.ecowitt_iot.const import DOMAIN
-from custom_components.ecowitt_iot.coordinator import \
-    EcowittDataUpdateCoordinator
+from custom_components.ecowitt_iot.coordinator import EcowittDataUpdateCoordinator
 from custom_components.ecowitt_iot.models import EcowittDeviceDescription
 
 pytest_plugins = "pytest_homeassistant_custom_component"

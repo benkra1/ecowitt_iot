@@ -1,4 +1,5 @@
 """Test helpers."""
+
 from typing import Any, Callable, List
 
 from homeassistant.core import HomeAssistant
