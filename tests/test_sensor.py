@@ -1,20 +1,47 @@
-"""Test Ecowitt IoT sensor platform."""
 from __future__ import annotations
 
+from unittest.mock import Mock, patch
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+
 from homeassistant.const import (
     PERCENTAGE,
     UnitOfTemperature,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import async_get_current_platform
 
 from custom_components.ecowitt_iot.const import DOMAIN
 from custom_components.ecowitt_iot.sensor import async_setup_entry
+from custom_components.ecowitt_iot.coordinator import EcowittDataUpdateCoordinator
+from custom_components.ecowitt_iot.models import EcowittDeviceDescription
 from .helpers import MockEntityAdder
 
 pytestmark = pytest.mark.asyncio
+
+@pytest.fixture
+def mock_coordinator(hass):
+    """Create mock coordinator."""
+    coordinator = Mock(spec=EcowittDataUpdateCoordinator)
+    device = EcowittDeviceDescription(
+        device_id="12345",
+        model=1,
+        name="Test Device",
+        sw_version="1.0.5"
+    )
+    coordinator.devices = [device]
+    coordinator.data = {
+        "12345": {
+            "command": [{
+                "water_status": 0,
+                "water_temp": "20.0",
+                "flow_velocity": "1.5",
+                "water_total": "100.0",
+                "wfc01batt": 4,
+                "rssi": 3,
+                "timeutc": 1600000000
+            }]
+        }
+    }
+    return coordinator
 
 @pytest.fixture
 def mock_add_entities(hass):
@@ -27,21 +54,17 @@ async def test_sensor_creation(
     mock_add_entities
 ) -> None:
     """Test creation of sensors."""
-    from custom_components.ecowitt_iot.sensor import EcowittSensor
-
-    config_entry = MockConfigEntry(
-        domain=DOMAIN,
-        entry_id="test_entry",
-        data={
-            "temperature_unit": UnitOfTemperature.CELSIUS,
-            "devices": [{
-                "id": "12345",
-                "model": 1,
-                "version": "1.0.5",
-                "nickname": "Test Device"
-            }]
-        }
-    )
+    config_entry = Mock()
+    config_entry.entry_id = "test_entry"
+    config_entry.data = {
+        "temperature_unit": UnitOfTemperature.CELSIUS,
+        "devices": [{
+            "id": "12345",
+            "model": 1,
+            "version": "1.0.5",
+            "nickname": "Test Device"
+        }]
+    }
 
     # Add coordinator to hass
     hass.data.setdefault(DOMAIN, {})
@@ -51,10 +74,10 @@ async def test_sensor_creation(
     await async_setup_entry(hass, config_entry, mock_add_entities.async_add_entities)
     await hass.async_block_till_done()
 
-    # Verify entities were added
-    assert len(mock_add_entities.entities) == 7, "Expected 7 sensors"
+    # Verify expected number of entities
+    assert len(mock_add_entities.entities) == 7, "Expected 7 entities"
 
-    # Verify each entity type exists
+    # Verify entity states
     state = hass.states.get("sensor.test_device_water_temperature")
     assert state is not None, "Water temperature sensor not found"
     assert state.state == "20.0"

@@ -1,11 +1,12 @@
 """Test fixtures for Ecowitt IoT tests."""
-from unittest.mock import Mock, AsyncMock
+from unittest.mock import Mock, AsyncMock, patch
 import pytest
 from homeassistant.core import HomeAssistant
 
 from custom_components.ecowitt_iot.const import DOMAIN
 from custom_components.ecowitt_iot.models import EcowittDeviceDescription
 from custom_components.ecowitt_iot.coordinator import EcowittDataUpdateCoordinator
+from .helpers import MockEntityAdder
 
 @pytest.fixture
 def mock_coordinator(hass: HomeAssistant):
@@ -36,7 +37,7 @@ def mock_coordinator(hass: HomeAssistant):
         }
     }
 
-    # Mock all async methods
+    # Mock async methods
     coordinator.async_request_refresh = AsyncMock()
     coordinator.async_refresh = AsyncMock()
     coordinator.set_device_state = AsyncMock()
@@ -47,4 +48,17 @@ def mock_coordinator(hass: HomeAssistant):
 @pytest.fixture
 def mock_add_entities(hass):
     """Create mock add entities helper."""
-    return AsyncMock()
+    return MockEntityAdder(hass)
+
+@pytest.fixture
+def mock_hass_config():
+    """Mock Home Assistant configuration."""
+    return {
+        "custom_components": {"ecowitt_iot": {"manifest.json": {}}}
+    }
+
+@pytest.fixture
+def mock_integration_setup():
+    """Mock integration setup."""
+    with patch('homeassistant.loader.async_get_integration') as mock:
+        yield mock
