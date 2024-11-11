@@ -8,7 +8,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.const import STATE_OFF, STATE_ON
 
 from custom_components.ecowitt_iot.const import DOMAIN
-from custom_components.ecowitt_iot.switch import async_setup_entry, EcowittSwitch
+from custom_components.ecowitt_iot.switch import async_setup_entry, EcowittSwitch, EcowittSwitchEntityDescription
 from .helpers import MockEntityAdder
 
 pytestmark = pytest.mark.asyncio
@@ -159,7 +159,8 @@ async def test_switch_turn_off(
                 coordinator=mock_coordinator,
                 device=mock_coordinator.devices[0],
                 description=EcowittSwitchEntityDescription(
-                    key="valve_switch", name="Valve", status_key="water_status"
+                    key="valve_switch", name="Valve", status_key="water_status",
+                    #entity_id = f"switch.{mock_switch_entry.entry_id.lower().replace(' ', '_')}_valve"
                 ),
             )
         ]
@@ -168,6 +169,7 @@ async def test_switch_turn_off(
 
     # Add entity to HA
     switch_entity.hass = hass
+    switch_entity.entity_id = f"switch.{switch_entity._device.name.lower().replace(' ', '_')}_valve"
     await switch_entity.async_added_to_hass()
     await hass.async_block_till_done()
 

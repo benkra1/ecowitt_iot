@@ -1,16 +1,24 @@
 from __future__ import annotations
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, AsyncMock
 import pytest
 
 from homeassistant.const import (
     PERCENTAGE,
     UnitOfTemperature,
+    UnitOfVolumeFlowRate,
+    UnitOfVolume,
+)
+from homeassistant.components.sensor import (
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
 )
 from homeassistant.core import HomeAssistant
 
 from custom_components.ecowitt_iot.const import DOMAIN
-from custom_components.ecowitt_iot.sensor import async_setup_entry, EcowittSensor
+from custom_components.ecowitt_iot.sensor import async_setup_entry, EcowittSensor, EcowittSensorEntityDescription
 from custom_components.ecowitt_iot.coordinator import EcowittDataUpdateCoordinator
 from custom_components.ecowitt_iot.models import EcowittDeviceDescription
 from .helpers import MockEntityAdder
@@ -41,6 +49,12 @@ def mock_coordinator(hass):
             ]
         }
     }
+        # Mock async methods
+    coordinator.async_request_refresh = AsyncMock()
+    coordinator.async_refresh = AsyncMock()
+    coordinator.set_device_state = AsyncMock()
+    coordinator.last_update_success = True
+
     return coordinator
 
 
@@ -78,6 +92,7 @@ async def test_sensor_creation(
                 coordinator=mock_coordinator,
                 device=mock_coordinator.devices[0],
                 description=description,
+                temp_unit=config_entry.temperature_unit,
             )
             for description in [
                 EcowittSensorEntityDescription(

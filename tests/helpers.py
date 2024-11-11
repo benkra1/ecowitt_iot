@@ -28,6 +28,7 @@ class MockEntityAdder:
 
             try:
                 # Add to HA state machine
+                entity.entity_id = f"switch.{entity._device.name.lower().replace(' ', '_')}_valve"
                 await entity.async_added_to_hass()
 
                 # Generate initial state
