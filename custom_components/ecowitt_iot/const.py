@@ -1,4 +1,5 @@
 """Constants for the Ecowitt IoT integration."""
+
 from datetime import timedelta
 from typing import Final
 
@@ -32,7 +33,7 @@ ERROR_BITS_AC1100: Final[dict[int, str]] = {
     2: "low_current",
     3: "overload",
     4: "relay_abnormal",
-    7: "offline"
+    7: "offline",
 }
 
 ERROR_BITS_WFC01: Final[dict[int, str]] = {
@@ -41,5 +42,5 @@ ERROR_BITS_WFC01: Final[dict[int, str]] = {
     2: "temp_low",
     3: "temp_high",
     4: "low_battery",
-    7: "offline"
+    7: "offline",
 }

@@ -1,4 +1,5 @@
 """Config flow for Ecowitt IoT integration."""
+
 from __future__ import annotations
 
 import asyncio
@@ -30,7 +31,9 @@ _LOGGER = logging.getLogger(__name__)
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_HOST): str,
-        vol.Required(CONF_TEMPERATURE_UNIT, default=UnitOfTemperature.CELSIUS): SelectSelector(
+        vol.Required(
+            CONF_TEMPERATURE_UNIT, default=UnitOfTemperature.CELSIUS
+        ): SelectSelector(
             SelectSelectorConfig(
                 options=[
                     UnitOfTemperature.CELSIUS,
@@ -42,10 +45,12 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 )
 
 
-async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> list[dict[str, Any]]:
+async def validate_input(
+    hass: HomeAssistant, data: dict[str, Any]
+) -> list[dict[str, Any]]:
     """Validate the user input allows us to connect."""
     session = async_get_clientsession(hass)
-    
+
     try:
         _LOGGER.debug("Getting device list from %s", data[CONF_HOST])
         async with session.get(
@@ -54,21 +59,21 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> list[dict
         ) as response:
             _LOGGER.debug("Response status: %s", response.status)
             text = await response.text()
-            
+
             # Clean the response - remove trailing % if present
-            text = text.strip(' %\n\r')
-            
+            text = text.strip(" %\n\r")
+
             _LOGGER.debug("Cleaned response text: %s", text)
-            
+
             try:
                 devices = json.loads(text)
             except json.JSONDecodeError as err:
                 _LOGGER.error("Failed to parse JSON: %s. Raw text: %s", err, text)
                 raise
-            
+
             if not isinstance(devices, dict) or "command" not in devices:
                 raise ValueError("Invalid device list format")
-            
+
             # Log discovered devices
             _LOGGER.info("Found devices: %s", devices["command"])
             return devices["command"]
@@ -80,7 +85,9 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> list[dict
         _LOGGER.error("Error connecting to %s: %s", data[CONF_HOST], err)
         raise
 
-class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+
+@config_entries.HANDLERS.register(DOMAIN)
+class EcowittConfigFlow(config_entries.ConfigFlow):
     """Handle a config flow for Ecowitt IoT."""
 
     VERSION = 1
@@ -102,36 +109,41 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._devices = await validate_input(self.hass, user_input)
                 self._host = user_input[CONF_HOST]
                 self._temperature_unit = user_input[CONF_TEMPERATURE_UNIT]
-                
+
                 if not self._devices:
                     _LOGGER.warning("No devices found")
                     errors["base"] = "no_devices"
                 else:
                     _LOGGER.info("Found devices: %s", self._devices)
-                    
+
                     # Process discovered devices
                     devices_config = []
                     for device in self._devices:
                         # Format version as "1.0.5" from ver=105
                         version = device.get("ver", 0)
-                        formatted_version = f"{version//100}.{version//10%10}.{version%10}"
-                        
+                        formatted_version = (
+                            f"{version//100}.{version//10%10}.{version%10}"
+                        )
+
                         device_entry = {
                             "id": device["id"],
                             "model": device["model"],
                             "version": formatted_version,
-                            "nickname": device.get("nickname", f"Device {hex(int(device['id']))[2:].upper()}")
+                            "nickname": device.get(
+                                "nickname",
+                                f"Device {hex(int(device['id']))[2:].upper()}",
+                            ),
                         }
                         devices_config.append(device_entry)
-                    
+
                     _LOGGER.debug("Created device config: %s", devices_config)
-                    
+
                     return self.async_create_entry(
                         title=f"Ecowitt IoT ({self._host})",
                         data={
                             CONF_HOST: self._host,
                             CONF_TEMPERATURE_UNIT: self._temperature_unit,
-                            "devices": devices_config
+                            "devices": devices_config,
                         },
                     )
 
@@ -146,4 +158,3 @@ class EcowittConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=STEP_USER_DATA_SCHEMA,
             errors=errors,
         )
- 

@@ -1,37 +1,47 @@
 """Test Ecowitt IoT sensor platform."""
-
-from unittest.mock import Mock
+from __future__ import annotations
 
 import pytest
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+from homeassistant.const import (
+    PERCENTAGE,
+    UnitOfTemperature,
+)
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import async_get_current_platform
 
 from custom_components.ecowitt_iot.const import DOMAIN
 from custom_components.ecowitt_iot.sensor import async_setup_entry
-
 from .helpers import MockEntityAdder
 
 pytestmark = pytest.mark.asyncio
-
 
 @pytest.fixture
 def mock_add_entities(hass):
     """Create mock add entities helper."""
     return MockEntityAdder(hass)
 
-
 async def test_sensor_creation(
-    hass: HomeAssistant, mock_coordinator, mock_add_entities
+    hass: HomeAssistant,
+    mock_coordinator,
+    mock_add_entities
 ) -> None:
     """Test creation of sensors."""
-    config_entry = Mock()
-    config_entry.entry_id = "test_entry"
-    config_entry.data = {
-        "temperature_unit": UnitOfTemperature.CELSIUS,
-        "devices": [
-            {"id": "12345", "model": 1, "version": "1.0.5", "nickname": "Test Device"}
-        ],
-    }
+    from custom_components.ecowitt_iot.sensor import EcowittSensor
+
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        entry_id="test_entry",
+        data={
+            "temperature_unit": UnitOfTemperature.CELSIUS,
+            "devices": [{
+                "id": "12345",
+                "model": 1,
+                "version": "1.0.5",
+                "nickname": "Test Device"
+            }]
+        }
+    )
 
     # Add coordinator to hass
     hass.data.setdefault(DOMAIN, {})
@@ -42,9 +52,9 @@ async def test_sensor_creation(
     await hass.async_block_till_done()
 
     # Verify entities were added
-    assert len(mock_add_entities.entities) > 0, "No entities were added"
+    assert len(mock_add_entities.entities) == 7, "Expected 7 sensors"
 
-    # Check states
+    # Verify each entity type exists
     state = hass.states.get("sensor.test_device_water_temperature")
     assert state is not None, "Water temperature sensor not found"
     assert state.state == "20.0"

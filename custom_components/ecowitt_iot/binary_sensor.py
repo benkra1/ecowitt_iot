@@ -1,4 +1,5 @@
 """Support for Ecowitt IoT binary sensors."""
+
 from __future__ import annotations
 
 import logging
@@ -6,10 +7,12 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
-    BinarySensorDeviceClass, BinarySensorEntity, BinarySensorEntityDescription)
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+    BinarySensorEntityDescription,
+)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (STATE_UNAVAILABLE, STATE_UNKNOWN,
-                                 EntityCategory)
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
