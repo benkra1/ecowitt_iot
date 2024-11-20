@@ -29,6 +29,7 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
           cache: "pip"
+          cache-dependency-path: '**/requirements_test.txt'
 
       - name: Install requirements
         run: |
@@ -85,6 +86,7 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
           cache: "pip"
+          cache-dependency-path: '**/requirements_test.txt'
 
       - name: Install requirements
         run: |
