@@ -13,7 +13,8 @@
       "cannot_connect": "Failed to connect to device",
       "timeout_connect": "Connection timeout",
       "no_devices": "No devices found",
-      "invalid_host": "Invalid IP address"
+      "invalid_host": "Invalid IP address",
+      "invalid_response": "The device returned an invalid or empty response. Please check the device's status, configuration, and network connection. Check the Home Assistant logs for the raw response."
     },
     "abort": {
       "already_configured": "Device is already configured"
