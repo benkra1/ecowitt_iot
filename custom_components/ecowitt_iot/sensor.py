@@ -64,7 +64,6 @@ WFC01_SENSORS = [
         key="flow_rate",
         name="Flow Rate",
         native_unit_of_measurement=UnitOfVolumeFlowRate.LITERS_PER_MINUTE,
-        device_class=SensorDeviceClass.WATER,
         state_class=SensorStateClass.MEASUREMENT,
         value_fn="flow_velocity",
         entity_registry_enabled_default=True,
