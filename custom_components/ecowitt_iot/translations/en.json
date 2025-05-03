@@ -2,22 +2,22 @@
   "config": {
     "step": {
       "user": {
-        "title": "Connect to Ecowitt IoT Device",
-        "description": "Enter the IP address of your Ecowitt IoT device",
+        "title": "Connect to Ecowitt Gateway/Hub",
+        "description": "Enter the IP address of your Ecowitt gateway/hub",
         "data": {
           "host": "IP Address"
         }
       }
     },
     "error": {
-      "cannot_connect": "Failed to connect to device",
+      "cannot_connect": "Failed to connect to the gateway/hub",
       "timeout_connect": "Connection timeout",
       "no_devices": "No devices found",
       "invalid_host": "Invalid IP address",
-      "invalid_response": "The device returned an invalid or empty response. Please check the device's status, configuration, and network connection. Check the Home Assistant logs for the raw response."
+      "invalid_response": "The gateway/hub returned an invalid or empty response. Please check the device's status, configuration, and network connection. Check the Home Assistant logs for the raw response."
     },
     "abort": {
-      "already_configured": "Device is already configured"
+      "already_configured": "Gateway/Hub is already configured"
     }
   },
   "entity": {
