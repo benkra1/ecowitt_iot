@@ -65,14 +65,34 @@ async def validate_input(
 
             _LOGGER.debug("Cleaned response text: %s", text)
 
+            # Pre-check for empty string or potential HTML response
+            if not text or text.startswith("<"):
+                _LOGGER.error("Invalid response received from device. Raw text: %s", text)
+                raise ValueError(
+                    "Received invalid data from the Ecowitt device. "
+                    "Please check the device configuration and network connection."
+                )
+
             try:
                 devices = json.loads(text)
             except json.JSONDecodeError as err:
-                _LOGGER.error("Failed to parse JSON: %s. Raw text: %s", err, text)
-                raise
+                _LOGGER.error(
+                    "Failed to parse JSON response from device: %s. Raw text: %s",
+                    err,
+                    text,
+                )
+                raise ValueError(
+                    "Received invalid JSON data from the Ecowitt device. "
+                    "Please check the device configuration and network connection."
+                ) from err
 
             if not isinstance(devices, dict) or "command" not in devices:
-                raise ValueError("Invalid device list format")
+                _LOGGER.error(
+                    "Invalid device list format in response. Raw text: %s", text
+                )
+                raise ValueError(
+                    "Received unexpected data format from the Ecowitt device."
+                )
 
             # Log discovered devices
             _LOGGER.info("Found devices: %s", devices["command"])
@@ -149,7 +169,12 @@ class EcowittConfigFlow(config_entries.ConfigFlow):
 
             except asyncio.TimeoutError:
                 errors["base"] = "timeout_connect"
+            except ValueError:
+                # This catches the specific ValueErrors raised in validate_input
+                # for invalid data (empty, HTML, bad JSON, wrong format)
+                errors["base"] = "invalid_response"
             except (aiohttp.ClientError, Exception) as error:
+                # This catches other connection errors or unexpected issues
                 _LOGGER.exception("Connection error: %s", error)
                 errors["base"] = "cannot_connect"
 
