@@ -16,6 +16,7 @@ DEFAULT_SCAN_INTERVAL: Final = 30  # seconds
 # Device Models
 MODEL_AC1100: Final = 2
 MODEL_WFC01: Final = 1
+MODEL_WFC02: Final = 3  # ADDED: WHC02 support
 
 # Device Status
 STATUS_OFFLINE: Final = "offline"
