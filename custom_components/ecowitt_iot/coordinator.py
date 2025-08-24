@@ -18,7 +18,7 @@ from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .const import DEFAULT_SCAN_INTERVAL, DOMAIN
+from .const import DEFAULT_SCAN_INTERVAL, DOMAIN, MODEL_WFC01, MODEL_WFC02, MODEL_AC1100
 from .models import EcowittDeviceDescription
 
 _LOGGER = logging.getLogger(__name__)
@@ -152,24 +152,34 @@ class EcowittDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "timeutc": int(time.time()),
         }
 
-        if device.model == 1:  # WFC01
-            base_data.update(
-                {
-                    "water_status": 0,
-                    "flow_velocity": "0.00",
-                    "water_total": "0.00",
-                    "water_temp": "20.0",
-                }
-            )
-        else:  # AC1100
-            base_data.update(
-                {
-                    "ac_status": 0,
-                    "realtime_power": 0,
-                    "ac_voltage": 0,
-                    "ac_current": 0,
-                }
-            )
+if device.model in (MODEL_WFC01):  # WFC01
+    base_data.update(
+        {
+            "water_status": 0,
+            "flow_velocity": "0.00",
+            "water_total": "0.00",
+            "water_temp": "20.0",
+        }
+    )
+ elif device.model in (MODEL_WFC02):  # WFC02
+    base_data.update(
+        {
+            "water_status": 0,
+            "flow_velocity": "0.00",
+            "water_total": "0.00",
+            "water_temp": "20.0",
+        }
+    )
+
+elif device.model == MODEL_AC1100:
+    base_data.update(
+        {
+            "ac_status": 0,
+            "realtime_power": 0,
+            "ac_voltage": 0,
+            "ac_current": 0,
+        }
+    )
 
         return {"command": [base_data]}
 
