@@ -19,7 +19,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN, MODEL_AC1100
+from .const import DOMAIN, MODEL_AC1100, MODEL_WFC01, MODEL_WFC02
 from .coordinator import EcowittDataUpdateCoordinator
 from .models import EcowittDeviceDescription
 
@@ -200,6 +200,78 @@ AC1100_SENSORS = [
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn="gw_rssi",
         entity_registry_enabled_default=False,
+    ),
+]
+
+WFC02_SENSORS = [
+    EcowittSensorEntityDescription(
+        key="wfc02_position",
+        name="Valve Position",
+        native_unit_of_measurement=PERCENTAGE,
+        entity_registry_enabled_default=True,
+        value_fn="wfc02_position",
+    ),
+    EcowittSensorEntityDescription(
+        key="wfc02_total",
+        name="Total Water",
+        native_unit_of_measurement=UnitOfVolume.LITERS,
+        device_class=SensorDeviceClass.WATER,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn="wfc02_total",
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="happen_water",
+        name="Happen Water",
+        native_unit_of_measurement=UnitOfVolume.LITERS,
+        device_class=SensorDeviceClass.WATER,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="happen_water",
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="wfc02_flow_velocity",
+        name="Flow Velocity",
+        native_unit_of_measurement=UnitOfVolumeFlowRate.LITERS_PER_MINUTE,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="wfc02_flow_velocity",
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="run_time",
+        name="Run Time",
+        native_unit_of_measurement="s",
+        entity_registry_enabled_default=True,
+        value_fn="run_time",
+    ),
+    EcowittSensorEntityDescription(
+        key="wfc02batt",
+        name="Battery",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="wfc02batt",
+        value_map=battery_level_map,
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="wfc02rssi",
+        name="Signal Strength",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="wfc02rssi",
+        value_map=signal_strength_map,
+        entity_registry_enabled_default=True,
+    ),
+    EcowittSensorEntityDescription(
+        key="gw_rssi",
+        name="Gateway RSSI",
+        native_unit_of_measurement="dBm",
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        value_fn="gw_rssi",
+        entity_registry_enabled_default=True,
     ),
 ]
 
