@@ -17,7 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MODEL_AC1100
+from .const import DOMAIN, MODEL_AC1100, MODEL_WFC01, MODEL_WFC02
 from .coordinator import EcowittDataUpdateCoordinator
 from .models import EcowittDeviceDescription
 
@@ -124,6 +124,44 @@ WFC01_BINARY_SENSORS = [
     ),
 ]
 
+WFC02_BINARY_SENSORS = [
+    EcowittBinarySensorDescription(
+        key="always_on",
+        name="Always On",
+        bit_position=0,  # If bitfield, use correct bit; if not, set to 0 or ignore
+    ),
+    EcowittBinarySensorDescription(
+        key="water_running",
+        name="Water Running",
+        bit_position=0,  # If bitfield, use correct bit; if not, set to 0 or ignore
+    ),
+    EcowittBinarySensorDescription(
+        key="water_action",
+        name="Water Action",
+        bit_position=0,
+    ),
+    EcowittBinarySensorDescription(
+        key="plan_status",
+        name="Plan Status",
+        bit_position=0,
+    ),
+    EcowittBinarySensorDescription(
+        key="flowmeter",
+        name="Flowmeter Enabled",
+        bit_position=0,
+    ),
+    EcowittBinarySensorDescription(
+        key="valve",
+        name="Valve Enabled",
+        bit_position=0,
+    ),
+    EcowittBinarySensorDescription(
+        key="warning",
+        name="Warning",
+        bit_position=0,
+    ),
+]
+# You can refine bit positions or add device_class/entity_category if needed!
 
 class EcowittBinarySensor(
     CoordinatorEntity[EcowittDataUpdateCoordinator], BinarySensorEntity
