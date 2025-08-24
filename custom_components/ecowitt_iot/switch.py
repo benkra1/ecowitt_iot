@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, MODEL_AC1100
+from .const import DOMAIN, MODEL_AC1100, MODEL_WFC01, MODEL_WFC02
 from .coordinator import EcowittDataUpdateCoordinator
 from .models import EcowittDeviceDescription
 
@@ -32,7 +32,12 @@ SWITCH_DESCRIPTIONS = {
         name="Power",
         status_key="ac_status",
     ),
-    1: EcowittSwitchEntityDescription(  # WFC01
+    MODEL_WFC01: EcowittSwitchEntityDescription(
+        key="valve_switch",
+        name="Valve",
+        status_key="water_status",
+    ),
+    MODEL_WFC02: EcowittSwitchEntityDescription(  # treat WFC02 like WFC01
         key="valve_switch",
         name="Valve",
         status_key="water_status",
