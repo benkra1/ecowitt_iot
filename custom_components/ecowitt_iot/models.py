@@ -7,7 +7,7 @@ from typing import Final
 
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import DOMAIN, MODEL_AC1100, MODEL_WFC01
+from .const import DOMAIN, MODEL_AC1100, MODEL_WFC01, MODEL_WFC02
 
 MANUFACTURER: Final = "Ecowitt"
 
@@ -24,7 +24,13 @@ class EcowittDeviceDescription:
     @property
     def model_name(self) -> str:
         """Get the model name of the device."""
-        return "WFC01" if self.model == MODEL_WFC01 else "AC1100"
+        if self.model == MODEL_WFC01:
+            return "WFC01"
+        elif self.model == MODEL_AC1100:
+            return "AC1100"
+        elif self.model == MODEL_WFC02:
+            return "WFC02"
+        return f"Unknown ({self.model})"
 
     @property
     def device_info(self) -> DeviceInfo:
